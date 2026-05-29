@@ -38,6 +38,7 @@ Inside the identity filesystem root, the primary owned surfaces remain:
 - Roadmap: [shared/ROADMAP.md](shared/ROADMAP.md)
 - Execution plan: [docs/EXECUTION_PLAN.md](docs/EXECUTION_PLAN.md)
 - AI-assisted workflow now: [docs/AI_ASSISTED_WORKFLOW.md](docs/AI_ASSISTED_WORKFLOW.md)
+- Offline dual-machine workflow: [docs/OFFLINE_DUAL_MACHINE_WORKFLOW.md](docs/OFFLINE_DUAL_MACHINE_WORKFLOW.md)
 - AI-assisted target state later: [docs/AI_ASSISTED_TARGET_STATE.md](docs/AI_ASSISTED_TARGET_STATE.md)
 - SaaS layout migration plan: [docs/SAAS_LAYOUT_MIGRATION_PLAN.md](docs/SAAS_LAYOUT_MIGRATION_PLAN.md)
 - SaaS layout post-move checklist: [docs/SAAS_LAYOUT_POST_MOVE_CHECKLIST.md](docs/SAAS_LAYOUT_POST_MOVE_CHECKLIST.md)
@@ -63,6 +64,7 @@ The workspace root now includes Linux and PowerShell automation under `scripts/l
 - Per-repo verify scripts install dependencies automatically, use `npm ci` only when a `package-lock.json` exists, and then run each repo's build and verification commands. Use `bash scripts/linux/verify-shared.sh`, `bash scripts/linux/verify-engine.sh`, `bash scripts/linux/verify-sdk.sh`, `bash scripts/linux/verify-admin.sh`, or `pwsh -File scripts/windows/verify-shared.ps1`, `verify-engine.ps1`, `verify-sdk.ps1`, `verify-admin.ps1`.
 - Cross-repo verification runs the repos in dependency order with `bash scripts/linux/verify-all.sh` or `pwsh -File scripts/windows/verify-all.ps1`.
 - Local Docker startup scripts use the workspace-root `docker-compose.yml`, optionally reset volumes first, and smoke-test the engine and admin stack. Use `bash scripts/linux/start-local-stack.sh --fresh all` or `pwsh -File scripts/windows/start-local-stack.ps1 -Fresh -Services all`. You can also target `engine` or `admin`.
+- Offline transfer helpers support the two-machine bundle workflow documented in [docs/OFFLINE_DUAL_MACHINE_WORKFLOW.md](docs/OFFLINE_DUAL_MACHINE_WORKFLOW.md). Use the `export-main-bundle`, `import-main-bundle`, `export-branch-bundle`, `import-branch-bundle`, and `lock-offline-work-machine` scripts under `scripts/linux/` or `scripts/windows/`.
 
 ## Docker local testing
 

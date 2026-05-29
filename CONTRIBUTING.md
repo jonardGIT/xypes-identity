@@ -4,6 +4,8 @@ This workspace uses a practical AI-assisted workflow that matches the platform's
 
 Start with [docs/AI_ASSISTED_WORKFLOW.md](docs/AI_ASSISTED_WORKFLOW.md). That document is the operative workflow for current work. The stricter future-state model remains documented separately in [docs/AI_ASSISTED_TARGET_STATE.md](docs/AI_ASSISTED_TARGET_STATE.md).
 
+If you are working as a single developer across two separate machines with file transfer only, use [docs/OFFLINE_DUAL_MACHINE_WORKFLOW.md](docs/OFFLINE_DUAL_MACHINE_WORKFLOW.md) as the mandatory operating model.
+
 If this repository is connected to a private GitHub remote, use [docs/PRIVATE_REMOTE_BASELINE.md](docs/PRIVATE_REMOTE_BASELINE.md) to turn the checked-in workflow files into actual branch and PR controls.
 
 Scope note: this contributor guide applies to the identity platform surfaces in this repository root. The sibling `xypes-docman` workspace should be treated as an external representative consumer unless a task explicitly includes coordinated consumer changes.

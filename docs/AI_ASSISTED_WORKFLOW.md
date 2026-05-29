@@ -8,6 +8,8 @@ For the stricter future-state model, see `./AI_ASSISTED_TARGET_STATE.md`.
 
 For the contributor-facing entrypoint that applies this workflow in day-to-day repo use, see `../CONTRIBUTING.md`.
 
+For a strict single-developer, two-machine, file-transfer-only operating model, see `./OFFLINE_DUAL_MACHINE_WORKFLOW.md`.
+
 This workflow is for the `xypes-identity` platform surfaces only. In the sibling SaaS layout, `xypes-docman` should be treated as an external representative consumer unless a task explicitly includes consumer-side work.
 
 Workspace recommendation:

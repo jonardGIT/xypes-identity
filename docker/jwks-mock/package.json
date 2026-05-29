@@ -1,0 +1,8 @@
+{
+  "name": "xypes-identity-local-token-mint",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "jose": "^6.0.11"
+  }
+}

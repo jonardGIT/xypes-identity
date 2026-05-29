@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "lastUpdated": "2026-05-28",
+  "repo": "xypes-identity-admin",
+  "role": "Admin and governance surface. Owns admin UI and admin API for roles, groups, bindings, reviews, and audit visibility.",
+  "orchestratorReadFirst": true,
+  "stableFocus": [
+    "Never enforce authorization locally. Always call the engine.",
+    "Surface explainability and audit trails clearly to operators.",
+    "Every privileged action must produce an audit event via the engine APIs.",
+    "Treat the engine's decision contract as immutable from this side."
+  ],
+  "ownedSurfaces": [
+    "admin UI",
+    "admin API endpoints that orchestrate engine APIs",
+    "governance workflows: approvals, access reviews, separation of duties",
+    "operator tooling for audit visibility and policy debugging"
+  ],
+  "doNotTouch": [
+    "Engine authorization semantics",
+    "SDK client packaging",
+    "Direct database access to engine tables"
+  ],
+  "boundaryRules": [
+    "All authorization decisions must go through the engine's decision API.",
+    "All mutations to roles, groups, and bindings must go through the engine's control plane APIs.",
+    "Never cache decisions on this side beyond a single request scope."
+  ],
+  "validationDefaults": [
+    "Run typed contract checks against engine APIs.",
+    "Run e2e governance flow tests for approvals and reviews when those flows exist.",
+    "Run frontend tests for capability-aware navigation once the admin UI is implemented.",
+    "Prefer thin-proxy route tests and typed error passthrough checks until richer admin surfaces land."
+  ],
+  "references": {
+    "designGuidelines": "../../docs/DESIGN_GUIDELINES.md",
+    "executionPlan": "../../docs/EXECUTION_PLAN.md",
+    "architecture": "../../shared/ARCHITECTURE.md",
+    "roadmap": "../../shared/ROADMAP.md",
+    "platformContext": "../../xypes-identity-platform-context.json"
+  },
+  "workingState": {
+    "activeArea": "Admin is currently a thin API scaffold over engine control-plane and access-review APIs. The next admin work should prioritize governance UX, approval workflows, audit visibility, and operator-facing policy debugging rather than local policy logic.",
+    "notes": [
+      "Stack direction: Next.js or similar React framework + typed engine client from SDK.",
+      "Current admin implementation is intentionally thin and must stay engine-faithful. Do not overstate the presence of a full governance surface or UI where only proxy APIs exist."
+    ]
+  }
+}

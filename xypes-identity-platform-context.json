@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "lastUpdated": "2026-05-28",
+  "purpose": "Durable cross-repo reference for xypes-identity platform orchestration, repo sequencing, and coordination handoffs.",
+  "orchestratorReadFirst": true,
+  "updatePolicy": {
+    "canonicalFile": "./xypes-identity-platform-context.json",
+    "whenToUpdate": [
+      "When durable cross-repo sequencing, ownership, or rollout priorities change.",
+      "When repo-local work produces reusable platform coordination notes.",
+      "When platform orchestration behavior would otherwise need duplicate updates across multiple prompt or agent files."
+    ],
+    "doNotStore": [
+      "Secrets, tokens, credentials, or personal data.",
+      "One-off chat recap without future planning value."
+    ]
+  },
+  "specialistReportContract": {
+    "requiredSection": "Platform context updates",
+    "include": [
+      "durable cross-repo sequencing changes",
+      "repo-to-repo dependencies that changed",
+      "validation defaults worth preserving",
+      "handoff notes another orchestrator should inherit"
+    ]
+  },
+  "stableFocus": [
+    "Engine first, admin second, sdk third, cross-repo validation last.",
+    "Treat the engine as the source of truth for authorization semantics, tenancy, scope, deny precedence, and audit shape.",
+    "Identity belongs to Supabase. Authorization belongs to the engine. Never blur the boundary.",
+    "Use direct delegation when repo-local orchestrators are available; otherwise return a concrete fallback plan."
+  ],
+  "currentReference": {
+    "shared": {
+      "path": "./shared",
+      "architecture": "./shared/ARCHITECTURE.md",
+      "roadmap": "./shared/ROADMAP.md",
+      "types": "./shared/types"
+    },
+    "docs": {
+      "designGuidelines": "./docs/DESIGN_GUIDELINES.md",
+      "executionPlan": "./docs/EXECUTION_PLAN.md",
+      "agentArchitecture": "./docs/AGENT_ARCHITECTURE.md",
+      "supabaseHybrid": "./docs/SUPABASE_HYBRID_ARCHITECTURE.md",
+      "stackEvaluation": "./docs/TECH_STACK_EVALUATION.md",
+      "roadmapReview": "./docs/RBAC_ROADMAP_REVIEW.md"
+    },
+    "repos": [
+      {
+        "path": "./xypes-identity-engine",
+        "localOrchestrator": "engine-orchestrator",
+        "agentContext": "./xypes-identity-engine/.github/agent-context.json"
+      },
+      {
+        "path": "./xypes-identity-admin",
+        "localOrchestrator": "admin-orchestrator",
+        "agentContext": "./xypes-identity-admin/.github/agent-context.json"
+      },
+      {
+        "path": "./xypes-identity-sdk",
+        "localOrchestrator": "sdk-orchestrator",
+        "agentContext": "./xypes-identity-sdk/.github/agent-context.json"
+      }
+    ]
+  },
+  "coordinationNotes": [
+    "When a contract or durable cross-repo rule changes, update the relevant file under ./shared/ before or alongside repo-local implementation.",
+    "If a task changes authorization semantics, tenancy, scope, deny precedence, audit shape, or decision contract, the engine must go first.",
+    "Do not let admin UX or SDK ergonomics override engine authorization, tenancy, or audit boundaries.",
+    "When runtime support is insufficient to delegate to a repo-local orchestrator, switch explicitly to fallback mode instead of pretending delegation succeeded.",
+    "Do not overstate completion: documented and tabletop-complete disaster recovery is not the same as a live restore drill, and SDK example entrypoints are not the same as a standalone reference consumer app.",
+    "Dependent platforms such as xypes-docman can already use resolve-session and authorize APIs, but production-grade provisioning still wants read/list semantics for applications, permissions, and role definitions."
+  ],
+  "validationDefaults": [
+    "Prefer narrow per-repo validation commands over broad checklists.",
+    "Always finish with engine, admin, and sdk validation notes for cross-repo work.",
+    "Require contract tests for every external endpoint and semantics tests for every authorization rule.",
+    "Treat SLOs, rollout posture, and disaster recovery completion as requiring executable or recorded operational evidence, not documentation alone."
+  ],
+  "workingState": {
+    "activeArea": "Post-foundation platform coordination. Engine phases 1 through 5 are materially implemented; current cross-repo focus is admin governance surface, retry-safe dependent-platform provisioning, rollout controls, disaster recovery drill execution, and reference integrations.",
+    "notes": [
+      "Platform orchestration should read the platform context, shared platform docs, and each touched repo's canonical agent-context file before making routing decisions.",
+      "Current stack direction: Node.js + TypeScript + Fastify + Supabase Auth + Postgres + Redis.",
+      "Use shared/ROADMAP.md as the durable source for current strengths, gaps, risks, and recommended next focus.",
+      "Near-term platform work should assume the engine is ahead of admin and rollout surfaces: prioritize operator experience, approval and audit workflows, DR execution evidence, dependent-platform provisioning reads, and end-to-end reference integrations over new authorization semantics unless a concrete gap requires engine-first work."
+    ]
+  }
+}

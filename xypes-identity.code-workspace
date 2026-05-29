@@ -1,0 +1,22 @@
+{
+  "folders": [
+    { "name": "Identity", "path": "." }
+  ],
+  "settings": {
+    "github.copilot.chat.codeGeneration.useInstructionFiles": true,
+    "github.copilot.chat.reviewSelection.enabled": true,
+    "github.copilot.nextEditSuggestions.enabled": true,
+    "chat.agent.enabled": true,
+    "editor.formatOnSave": true,
+    "js/ts.preferences.importModuleSpecifier": "relative"
+  },
+  "extensions": {
+    "recommendations": [
+      "GitHub.copilot",
+      "GitHub.copilot-chat",
+      "dbaeumer.vscode-eslint",
+      "esbenp.prettier-vscode",
+      "prisma.prisma"
+    ]
+  }
+}

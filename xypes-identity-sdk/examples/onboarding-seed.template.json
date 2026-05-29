@@ -1,0 +1,45 @@
+{
+  "tenant_id": "tenant_123",
+  "application": {
+    "application_id": "application_billing_123",
+    "slug": "billing",
+    "display_name": "Billing"
+  },
+  "permissions": [
+    {
+      "action": "read",
+      "resource_type": "billing.record",
+      "description": "Read Billing records"
+    },
+    {
+      "action": "write",
+      "resource_type": "billing.record",
+      "description": "Write Billing records"
+    },
+    {
+      "action": "approve",
+      "resource_type": "billing.record",
+      "description": "Approve privileged Billing actions"
+    }
+  ],
+  "role_definitions": [
+    {
+      "name": "billing-operator",
+      "description": "Operational access for Billing",
+      "approval_required": false,
+      "permission_refs": ["read", "write"]
+    },
+    {
+      "name": "billing-approver",
+      "description": "Privileged approval access for Billing",
+      "approval_required": true,
+      "permission_refs": ["read", "approve"]
+    }
+  ],
+  "validation_checklist": [
+    "Confirm the tenant_id matches the explicit tenant routing used by the consuming app.",
+    "Review permission names and resource types before seeding control-plane state.",
+    "Keep approval_required enabled for privileged actions until the governance flow is exercised.",
+    "Run resolve-session plus authorize.check in a non-production environment before tenant enforcement."
+  ]
+}

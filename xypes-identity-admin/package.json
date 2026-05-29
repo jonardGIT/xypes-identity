@@ -1,0 +1,23 @@
+{
+  "name": "xypes-identity-admin",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:sdk": "npm --prefix ../xypes-identity-sdk run build",
+    "build": "npm run build:sdk && tsc -p tsconfig.json",
+    "dev": "tsx watch src/server.ts",
+    "start": "node dist/server.js",
+    "test": "npm run build:sdk && tsx --test src/**/*.test.ts",
+    "typecheck": "npm run build:sdk && tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@xypes-identity/sdk": "file:../xypes-identity-sdk",
+    "fastify": "^5.3.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.31",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  }
+}

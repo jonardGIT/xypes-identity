@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "lastUpdated": "2026-05-28",
+  "repo": "xypes-identity-sdk",
+  "role": "Integration surface. Owns the TypeScript SDK, framework middleware, and integration examples.",
+  "orchestratorReadFirst": true,
+  "stableFocus": [
+    "Surface engine semantics faithfully. Never invent policy.",
+    "Make the safe path the easy path.",
+    "Force explicit tenant context at the API surface.",
+    "Propagate decision ids for traceability."
+  ],
+  "ownedSurfaces": [
+    "TypeScript client for engine APIs",
+    "Fastify middleware adapter",
+    "Express middleware adapter",
+    "session resolution helpers",
+    "integration examples and sample apps"
+  ],
+  "doNotTouch": [
+    "Engine authorization semantics",
+    "Admin UI internals",
+    "Application business logic"
+  ],
+  "boundaryRules": [
+    "SDK must require tenant id where the engine requires it.",
+    "SDK must never cache decisions beyond a request scope unless given an explicit invalidation channel.",
+    "SDK must surface deny sources and decision ids in its typed responses."
+  ],
+  "validationDefaults": [
+    "Run integration tests against a real engine instance.",
+    "Run middleware tests for both Fastify and Express adapters.",
+    "Run typing tests to ensure shared contracts compile.",
+    "Do not treat example entrypoints as a full reference consumer app when assessing Phase 6 completion."
+  ],
+  "references": {
+    "designGuidelines": "../../docs/DESIGN_GUIDELINES.md",
+    "executionPlan": "../../docs/EXECUTION_PLAN.md",
+    "architecture": "../../shared/ARCHITECTURE.md",
+    "roadmap": "../../shared/ROADMAP.md",
+    "platformContext": "../../xypes-identity-platform-context.json"
+  },
+  "workingState": {
+    "activeArea": "Phase 6 core SDK work is materially implemented: typed client APIs, Express and Fastify middleware, and sample app entrypoints exist. Remaining integration work should focus on stronger end-to-end reference integrations and real-consumer validation.",
+    "notes": [
+      "SDK depends on shared types only. Do not import engine internals.",
+      "Current examples are copyable app entrypoints, not a standalone reference consumer app with independent runtime validation."
+    ]
+  }
+}

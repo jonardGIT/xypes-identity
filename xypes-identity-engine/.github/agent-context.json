@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "lastUpdated": "2026-05-28",
+  "repo": "xypes-identity-engine",
+  "role": "Authorization core. Source of truth for authorization semantics, tenancy, scope, deny precedence, audit shape, and decision contract.",
+  "orchestratorReadFirst": true,
+  "stableFocus": [
+    "Correctness before latency. Latency before throughput.",
+    "Every authorization mutation writes to the outbox in the same transaction.",
+    "Deny always overrides allow at the same or broader scope.",
+    "Tenant id is required in every authorization input.",
+    "Nested group traversal is bounded. Default depth: 16. Cycles rejected at write time."
+  ],
+  "ownedSurfaces": [
+    "schema and migrations",
+    "decision API: /v1/authorize/check",
+    "explain API: /v1/authorize/explain",
+    "auth bridge: /v1/auth/resolve-session",
+    "role registry, group directory, binding APIs",
+    "deny policies",
+    "decision cache and expansion cache (Redis)",
+    "Postgres outbox and worker integration",
+    "audit events"
+  ],
+  "doNotTouch": [
+    "Admin UI rendering",
+    "SDK packaging",
+    "Application-specific business logic"
+  ],
+  "boundaryRules": [
+    "Never read or write admin or SDK code directly.",
+    "Never trust JWT claims as authorization. Re-evaluate at the engine.",
+    "Never infer tenant context from the principal alone."
+  ],
+  "validationDefaults": [
+    "Run engine semantics tests on every change to evaluation logic.",
+    "Run contract tests for every changed endpoint schema.",
+    "Run cache invalidation tests when outbox or caches change.",
+    "Run deny-precedence tests when policy code changes.",
+    "Treat rollout readiness, DR completion, and SLO attainment as requiring executable or recorded operational evidence, not documentation alone."
+  ],
+  "references": {
+    "designGuidelines": "../../docs/DESIGN_GUIDELINES.md",
+    "executionPlan": "../../docs/EXECUTION_PLAN.md",
+    "architecture": "../../shared/ARCHITECTURE.md",
+    "roadmap": "../../shared/ROADMAP.md",
+    "platformContext": "../../xypes-identity-platform-context.json"
+  },
+  "workingState": {
+    "activeArea": "Engine phases 1 through 5 are materially implemented. Current engine work should focus on operational evidence, any remaining governance workflow support required by admin, and only additive authorization-core changes that close concrete gaps.",
+    "notes": [
+      "Stack: Node.js + TypeScript + Fastify + Postgres. Redis added in Phase 4.",
+      "The engine is ahead of the other repos. Prefer avoiding new semantics work unless the gap cannot be closed in admin, SDK, rollout, or ops layers.",
+      "Do not describe effective-access capabilities as implemented unless a concrete endpoint and contract exist in this repo."
+    ]
+  }
+}

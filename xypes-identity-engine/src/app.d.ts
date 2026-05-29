@@ -1,0 +1,36 @@
+import { type FastifyInstance } from "fastify";
+import type { ListAuditEventsDependencies } from "./domain/audit-event-types.js";
+import type { ListAccessReviewFindingsDependencies } from "./domain/access-review-types.js";
+import type { CreateApplicationDependencies } from "./domain/application-types.js";
+import type { CreateDenyPolicyDependencies } from "./domain/deny-policy-types.js";
+import type { CreateGroupDependencies } from "./domain/group-types.js";
+import type { CreateGroupMembershipDependencies } from "./domain/group-membership-types.js";
+import type { CreatePermissionDependencies } from "./domain/permission-types.js";
+import type { CreateRoleBindingDependencies } from "./domain/role-binding-types.js";
+import type { UpdateRoleBindingStatusDependencies } from "./domain/role-binding-types.js";
+import type { CreateRoleDefinitionDependencies, UpdateRoleDefinitionStatusDependencies } from "./domain/role-definition-types.js";
+import type { AttachRolePermissionDependencies } from "./domain/role-permission-types.js";
+import type { ResolveSessionDependencies } from "./domain/session-types.js";
+import type { AuthorizeCheckServiceDependencies } from "./services/authorize-check.js";
+import type { AuthorizeExplainServiceDependencies } from "./services/authorize-explain.js";
+export interface AppDependencies {
+    principalRepository?: ResolveSessionDependencies["principalRepository"];
+    tokenVerifier?: ResolveSessionDependencies["tokenVerifier"];
+    auditPublisher?: ResolveSessionDependencies["auditPublisher"];
+    decisionIdGenerator?: ResolveSessionDependencies["decisionIdGenerator"];
+    clock?: ResolveSessionDependencies["clock"];
+    auditRead?: ListAuditEventsDependencies;
+    accessReviewRead?: ListAccessReviewFindingsDependencies;
+    applicationCreate?: CreateApplicationDependencies;
+    authorizationCheck?: AuthorizeCheckServiceDependencies & AuthorizeExplainServiceDependencies;
+    denyPolicyCreate?: CreateDenyPolicyDependencies;
+    groupCreate?: CreateGroupDependencies;
+    groupMembershipCreate?: CreateGroupMembershipDependencies;
+    permissionCreate?: CreatePermissionDependencies;
+    roleBindingCreate?: CreateRoleBindingDependencies;
+    roleBindingStatusUpdate?: UpdateRoleBindingStatusDependencies;
+    roleDefinitionCreate?: CreateRoleDefinitionDependencies;
+    roleDefinitionStatusUpdate?: UpdateRoleDefinitionStatusDependencies;
+    rolePermissionAttach?: AttachRolePermissionDependencies;
+}
+export declare const buildApp: (dependencies: AppDependencies) => Promise<FastifyInstance>;

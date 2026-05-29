@@ -1,0 +1,26 @@
+{
+  "name": "xypes-identity-engine",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "npm --prefix ../shared run build && tsc -p tsconfig.json",
+    "dev": "tsx watch src/server.ts",
+    "dev:worker": "tsx watch src/worker.ts",
+    "start": "node dist/server.js",
+    "start:worker": "node dist/worker.js",
+    "test": "npm --prefix ../shared run build && tsx --test src/**/*.test.ts"
+  },
+  "dependencies": {
+    "@xypes-identity/shared": "file:../shared",
+    "fastify": "^5.3.3",
+    "jose": "^6.0.11",
+    "pg": "^8.16.0",
+    "redis": "^5.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.31",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  }
+}

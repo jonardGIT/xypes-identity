@@ -1,0 +1,70 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: xypes_identity
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./xypes-identity-engine/sql:/docker-entrypoint-initdb.d:ro
+      - ./xypes-identity-engine/sql/9000_local_dev_resolve_session_seed.sql:/docker-entrypoint-initdb.d/9000_local_dev_resolve_session_seed.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d xypes_identity"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  jwks-mock:
+    image: nginx:1.27-alpine
+    ports:
+      - "8081:80"
+    volumes:
+      - ./docker/jwks-mock:/usr/share/nginx/html:ro
+
+  token-mint:
+    profiles: ["tools"]
+    build:
+      context: ./docker/jwks-mock
+      dockerfile: Dockerfile.token-mint
+    environment:
+      TOKEN_ISSUER: http://jwks-mock
+      TOKEN_AUDIENCE: local-dev
+      TOKEN_KEY_ID: local-dev-key
+      TOKEN_PRIVATE_KEY_PATH: /work/local-dev-private-key.jwk.json
+
+  engine:
+    build:
+      context: .
+      dockerfile: xypes-identity-engine/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      jwks-mock:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/xypes_identity
+      SUPABASE_JWT_ISSUER: http://jwks-mock
+      SUPABASE_JWT_AUDIENCE: local-dev
+      SUPABASE_JWKS_URL: http://jwks-mock/jwks.json
+      PORT: 3000
+    ports:
+      - "3000:3000"
+
+  admin:
+    build:
+      context: .
+      dockerfile: xypes-identity-admin/Dockerfile
+    depends_on:
+      engine:
+        condition: service_started
+    environment:
+      ENGINE_BASE_URL: http://engine:3000
+      PORT: 3001
+    ports:
+      - "3001:3001"
+
+volumes:
+  postgres-data:

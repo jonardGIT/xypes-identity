@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  type ApplyOnboardingManifestResult,
   type AttachRolePermissionRequest,
   type AttachRolePermissionResponse,
   type CreateApplicationRequest,
@@ -29,6 +30,7 @@ import {
   type ListPermissionsResponse,
   type ListRoleDefinitionsRequest,
   type ListRoleDefinitionsResponse,
+  type XypesIdentityOnboardingManifest,
   type UpdateRoleBindingStatusRequest,
   type UpdateRoleBindingStatusResponse,
   type UpdateRoleDefinitionStatusRequest,
@@ -455,6 +457,162 @@ const listAccessReviewWorkbenchResponse: ListAccessReviewFindingsResponse = {
       permission_ids: ["permission_123"],
     },
   ],
+};
+
+const onboardingManifest: XypesIdentityOnboardingManifest = {
+  tenant_id: "tenant_123",
+  identity_bridge_mapping: {
+    supabase_project_ref: "billing-supabase-project",
+    expected_jwt_issuer: "https://billing.supabase.co/auth/v1",
+    expected_jwt_audience: "authenticated",
+    tenant_resolution_rule: "route_segment",
+    tenant_resolution_detail:
+      "Resolve tenant_id from /tenants/tenant_123/... request routes.",
+    tenant_membership_bootstrap:
+      "Grant tenant membership manually before enabling enforcement.",
+  },
+  application: {
+    application_id: "application_billing_123",
+    slug: "billing",
+    display_name: "Billing",
+  },
+  permissions: [
+    {
+      ref: "read",
+      action: "read",
+      resource_type: "billing.record",
+      description: "Read Billing records",
+    },
+    {
+      ref: "write",
+      action: "write",
+      resource_type: "billing.record",
+      description: "Write Billing records",
+    },
+  ],
+  role_definitions: [
+    {
+      name: "billing-operator",
+      description: "Operational access for Billing",
+      approval_required: false,
+      status: "active",
+      permission_refs: ["read", "write"],
+    },
+  ],
+  validation_checklist: [
+    "Confirm the tenant_id matches the explicit tenant routing used by the consuming app.",
+  ],
+};
+
+const onboardingPreviewResponse: ApplyOnboardingManifestResult = {
+  dry_run: true,
+  identity_bridge_mapping: {
+    automation_status: "manual_capture_only",
+    captured: onboardingManifest.identity_bridge_mapping,
+    manual_steps: [
+      "Confirm Supabase project 'billing-supabase-project' is the issuer of the bearer tokens for this environment.",
+      "Verify the engine is configured with issuer 'https://billing.supabase.co/auth/v1' and audience 'authenticated' before enforcement begins.",
+      "Implement and test tenant resolution via 'route_segment': Resolve tenant_id from /tenants/tenant_123/... request routes.",
+      "Document how principals gain tenant membership: Grant tenant membership manually before enabling enforcement.",
+    ],
+  },
+  application: {
+    action: "planned",
+    application: null,
+    manifest_application_id: "application_billing_123",
+  },
+  permissions: onboardingManifest.permissions.map((permission) => ({
+    ref: permission.ref ?? permission.action,
+    action: "planned" as const,
+    permission: null,
+  })),
+  role_definitions: [
+    {
+      name: "billing-operator",
+      action: "planned",
+      status_action: "planned",
+      desired_status: "active",
+      role_definition: null,
+      audit_event_id: null,
+    },
+  ],
+  role_permissions: [
+    {
+      role_definition_name: "billing-operator",
+      permission_ref: "read",
+      action: "planned",
+      audit_event_id: null,
+    },
+    {
+      role_definition_name: "billing-operator",
+      permission_ref: "write",
+      action: "planned",
+      audit_event_id: null,
+    },
+  ],
+  warnings: [],
+};
+
+const onboardingApplyResponse: ApplyOnboardingManifestResult = {
+  ...onboardingPreviewResponse,
+  dry_run: false,
+  application: {
+    action: "created",
+    application: {
+      ...createApplicationResponse.application,
+      application_id: "application_billing_123",
+    },
+    manifest_application_id: "application_billing_123",
+  },
+  permissions: [
+    {
+      ref: "read",
+      action: "created",
+      permission: {
+        ...createPermissionResponse.permission,
+        permission_id: "permission_read",
+        action: "read",
+        resource_type: "billing.record",
+        description: "Read Billing records",
+      },
+    },
+    {
+      ref: "write",
+      action: "existing",
+      permission: {
+        ...createPermissionResponse.permission,
+        permission_id: "permission_write",
+        action: "write",
+        resource_type: "billing.record",
+        description: "Write Billing records",
+      },
+    },
+  ],
+  role_definitions: [
+    {
+      name: "billing-operator",
+      action: "created",
+      status_action: "updated",
+      desired_status: "active",
+      role_definition: updateRoleDefinitionStatusResponse.role_definition,
+      audit_event_id: updateRoleDefinitionStatusResponse.audit.audit_event_id,
+    },
+  ],
+  role_permissions: [
+    {
+      role_definition_name: "billing-operator",
+      permission_ref: "read",
+      action: "attached",
+      audit_event_id: attachRolePermissionResponse.audit.audit_event_id,
+    },
+    {
+      role_definition_name: "billing-operator",
+      permission_ref: "write",
+      action: "existing",
+      audit_event_id: null,
+    },
+  ],
+  warnings: [],
 };
 
 const listAuditEventsRequest: ListAuditEventsRequest = {
@@ -1526,5 +1684,218 @@ test("SDK API errors are passed through for PATCH /admin/role-bindings/:role_bin
     message: "The role binding does not exist for the supplied tenant.",
     statusCode: 404,
     code: "ROLE_BINDING_NOT_FOUND",
+  });
+});
+
+test("GET /admin/onboarding/console serves the onboarding console shell", async (t) => {
+  const app = await buildApp({
+    audit: createAuditStub(),
+    accessReviews: createAccessReviewStub(),
+    controlPlane: createControlPlaneStub(),
+  });
+
+  t.after(async () => {
+    await app.close();
+  });
+
+  const response = await app.inject({
+    method: "GET",
+    url: "/admin/onboarding/console",
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.match(response.body, /Onboarding console/);
+  assert.match(response.body, /Preview onboarding plan/);
+  assert.match(response.body, /Apply onboarding manifest/);
+  assert.match(response.body, /supabase-project-ref/);
+});
+
+test("POST /admin/onboarding/preview returns a dry-run onboarding plan", async (t) => {
+  let capturedListApplicationsRequest: ListApplicationsRequest | undefined;
+
+  const app = await buildApp({
+    audit: createAuditStub(),
+    accessReviews: createAccessReviewStub(),
+    controlPlane: createControlPlaneStub({
+      listApplications: async (request) => {
+        capturedListApplicationsRequest = request;
+        return {
+          generated_at: "2026-05-30T00:00:00.000Z",
+          applications: [],
+        } satisfies ListApplicationsResponse;
+      },
+    }),
+  });
+
+  t.after(async () => {
+    await app.close();
+  });
+
+  const response = await app.inject({
+    method: "POST",
+    url: "/admin/onboarding/preview",
+    payload: {
+      manifest: onboardingManifest,
+      actor_principal_id: "principal_onboarding_123",
+      actor_subject: "onboarding.operator@example.test",
+      reason: "Preview onboarding manifest",
+    },
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.deepEqual(capturedListApplicationsRequest, {
+    tenant_id: "tenant_123",
+    slug: "billing",
+    limit: 2,
+  });
+  assert.deepEqual(response.json(), onboardingPreviewResponse);
+});
+
+test("POST /admin/onboarding/apply applies the onboarding manifest through the SDK helper", async (t) => {
+  const calls: string[] = [];
+
+  const app = await buildApp({
+    audit: createAuditStub(),
+    accessReviews: createAccessReviewStub(),
+    controlPlane: createControlPlaneStub({
+      listApplications: async () => {
+        calls.push("listApplications");
+        return {
+          generated_at: "2026-05-30T00:00:00.000Z",
+          applications: [],
+        } satisfies ListApplicationsResponse;
+      },
+      createApplication: async () => {
+        calls.push("createApplication");
+        return {
+          ...createApplicationResponse,
+          application: {
+            ...createApplicationResponse.application,
+            application_id: "application_billing_123",
+          },
+        };
+      },
+      listPermissions: async () => {
+        calls.push("listPermissions");
+        return {
+          generated_at: "2026-05-30T00:00:00.000Z",
+          permissions: [
+            {
+              ...createPermissionResponse.permission,
+              permission_id: "permission_write",
+              action: "write",
+              resource_type: "billing.record",
+              description: "Write Billing records",
+            },
+          ],
+        } satisfies ListPermissionsResponse;
+      },
+      createPermission: async (request) => {
+        calls.push("createPermission");
+        return {
+          permission: {
+            ...createPermissionResponse.permission,
+            permission_id: `permission_${request.action}`,
+            action: request.action,
+            resource_type: request.resource_type,
+            description: request.description,
+          },
+          audit: createPermissionResponse.audit,
+        };
+      },
+      listRoleDefinitions: async () => {
+        calls.push("listRoleDefinitions");
+        return {
+          generated_at: "2026-05-30T00:00:00.000Z",
+          role_definitions: [],
+        } satisfies ListRoleDefinitionsResponse;
+      },
+      createRoleDefinition: async () => {
+        calls.push("createRoleDefinition");
+        return createRoleDefinitionResponse;
+      },
+      updateRoleDefinitionStatus: async () => {
+        calls.push("updateRoleDefinitionStatus");
+        return updateRoleDefinitionStatusResponse;
+      },
+      attachRolePermission: async (request) => {
+        if (request.permission_id === "permission_write") {
+          throw new XypesIdentityApiError({
+            error: "Role Permission Error",
+            message: "Role permission already exists.",
+            statusCode: 409,
+            code: "ROLE_PERMISSION_DUPLICATE",
+          });
+        }
+
+        calls.push("attachRolePermission");
+        return attachRolePermissionResponse;
+      },
+    }),
+  });
+
+  t.after(async () => {
+    await app.close();
+  });
+
+  const response = await app.inject({
+    method: "POST",
+    url: "/admin/onboarding/apply",
+    payload: {
+      manifest: onboardingManifest,
+      actor_principal_id: "principal_onboarding_123",
+      actor_subject: "onboarding.operator@example.test",
+      reason: "Apply onboarding manifest",
+    },
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.deepEqual(calls, [
+    "listApplications",
+    "createApplication",
+    "listPermissions",
+    "createPermission",
+    "listRoleDefinitions",
+    "createRoleDefinition",
+    "updateRoleDefinitionStatus",
+    "attachRolePermission",
+  ]);
+  assert.deepEqual(response.json(), onboardingApplyResponse);
+});
+
+test("POST /admin/onboarding/preview maps manifest validation failures to deterministic admin errors", async (t) => {
+  const app = await buildApp({
+    audit: createAuditStub(),
+    accessReviews: createAccessReviewStub(),
+    controlPlane: createControlPlaneStub(),
+  });
+
+  t.after(async () => {
+    await app.close();
+  });
+
+  const response = await app.inject({
+    method: "POST",
+    url: "/admin/onboarding/preview",
+    payload: {
+      manifest: {
+        ...onboardingManifest,
+        role_definitions: [
+          {
+            ...onboardingManifest.role_definitions[0],
+            permission_refs: ["missing-ref"],
+          },
+        ],
+      },
+      actor_subject: "onboarding.operator@example.test",
+    },
+  });
+
+  assert.equal(response.statusCode, 400);
+  assert.deepEqual(response.json(), {
+    error: "Onboarding Manifest Error",
+    message: "Role definition 'billing-operator' references unknown permission ref 'missing-ref'.",
+    statusCode: 400,
+    code: "ADMIN_ONBOARDING_MANIFEST_INVALID",
   });
 });

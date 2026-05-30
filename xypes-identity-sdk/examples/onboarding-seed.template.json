@@ -1,5 +1,13 @@
 {
   "tenant_id": "tenant_123",
+  "identity_bridge_mapping": {
+    "supabase_project_ref": "billing-supabase-project",
+    "expected_jwt_issuer": "https://billing.supabase.co/auth/v1",
+    "expected_jwt_audience": "authenticated",
+    "tenant_resolution_rule": "route_segment",
+    "tenant_resolution_detail": "Resolve tenant_id from /tenants/tenant_123/... request routes.",
+    "tenant_membership_bootstrap": "Grant tenant membership manually before enabling enforcement."
+  },
   "application": {
     "application_id": "application_billing_123",
     "slug": "billing",
@@ -7,16 +15,19 @@
   },
   "permissions": [
     {
+      "ref": "read",
       "action": "read",
       "resource_type": "billing.record",
       "description": "Read Billing records"
     },
     {
+      "ref": "write",
       "action": "write",
       "resource_type": "billing.record",
       "description": "Write Billing records"
     },
     {
+      "ref": "approve",
       "action": "approve",
       "resource_type": "billing.record",
       "description": "Approve privileged Billing actions"
@@ -27,12 +38,14 @@
       "name": "billing-operator",
       "description": "Operational access for Billing",
       "approval_required": false,
+      "status": "active",
       "permission_refs": ["read", "write"]
     },
     {
       "name": "billing-approver",
       "description": "Privileged approval access for Billing",
       "approval_required": true,
+      "status": "active",
       "permission_refs": ["read", "approve"]
     }
   ],

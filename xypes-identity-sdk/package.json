@@ -17,6 +17,7 @@
   "scripts": {
     "build:shared": "npm --prefix ../shared run build",
     "build": "npm run build:shared && tsc -p tsconfig.json",
+    "onboarding:apply": "tsx scripts/apply-onboarding-manifest.ts",
     "onboarding:seed": "tsx scripts/render-onboarding-seed.ts",
     "typecheck": "npm run build:shared && tsc -p tsconfig.json --noEmit",
     "test": "npm run build && tsx --test test/**/*.test.ts"

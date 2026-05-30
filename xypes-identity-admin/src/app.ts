@@ -14,11 +14,18 @@ import {
   type OperationsClient,
 } from "./routes/operations-routes.js";
 import {
+  registerOnboardingRoutes,
+  type OnboardingControlPlaneClient,
+} from "./routes/onboarding-routes.js";
+import {
   registerRoleDefinitionRoutes,
   type RoleDefinitionControlPlaneClient,
 } from "./routes/role-definition-routes.js";
 
-export type AdminControlPlaneClient = RoleDefinitionControlPlaneClient & ControlPlaneClient;
+export type AdminControlPlaneClient =
+  RoleDefinitionControlPlaneClient
+  & ControlPlaneClient
+  & OnboardingControlPlaneClient;
 export type AdminAccessReviewClient = AccessReviewClient;
 export type AdminAuditClient = AuditClient;
 export type AdminOperationsClient = OperationsClient;
@@ -44,6 +51,9 @@ export const buildApp = async (dependencies: AppDependencies): Promise<FastifyIn
   });
   await registerAccessReviewRoutes(app, {
     accessReviews: dependencies.accessReviews,
+  });
+  await registerOnboardingRoutes(app, {
+    controlPlane: dependencies.controlPlane,
   });
   if (dependencies.operations !== undefined) {
     await registerOperationsRoutes(app, {

@@ -37,7 +37,7 @@ If you already have an Express or Fastify app, the xypes-specific integration is
 
 ## Onboarding seed artifact
 
-Use the checked-in template at [`./examples/onboarding-seed.template.json`](./examples/onboarding-seed.template.json) when a new application team needs a reviewable starting manifest for permissions and role definitions.
+Use the checked-in template at [`./examples/onboarding-seed.template.json`](./examples/onboarding-seed.template.json) when a new application team needs a reviewable starting manifest for permissions, role definitions, and the required Supabase-project and tenant-routing decisions.
 
 To generate a customized starter manifest from the command line:
 
@@ -45,7 +45,17 @@ To generate a customized starter manifest from the command line:
 npm run onboarding:seed -- --tenant-id tenant_123 --application-id application_billing_123 --slug billing --display-name Billing
 ```
 
-Add `--output ./examples/billing-onboarding-seed.json` to write the rendered manifest to disk instead of printing it to stdout.
+Add `--supabase-project-ref`, `--supabase-jwt-issuer`, `--supabase-jwt-audience`, `--tenant-resolution-rule`, `--tenant-resolution-detail`, or `--tenant-membership-bootstrap` to override the default mapping placeholders. Add `--output ./examples/billing-onboarding-seed.json` to write the rendered manifest to disk instead of printing it to stdout.
+
+To apply a reviewed manifest against a live engine control plane:
+
+```bash
+npm run onboarding:apply -- --base-url http://localhost:3000 --manifest ./examples/onboarding-seed.template.json --actor-subject onboarding.operator@example.test --dry-run
+```
+
+Remove `--dry-run` to create missing applications, permissions, role definitions, role-permission attachments, and to move seeded role definitions to the manifest's requested status. The apply flow is idempotent for existing applications, permissions, and role definitions, and it tolerates duplicate role-permission attachments by treating them as already present.
+
+The apply command validates immutable state before mutating anything. If an existing application slug, permission, or role definition conflicts with the reviewed manifest, the command fails with a deterministic manifest error instead of silently drifting control-plane state. The manifest's `identity_bridge_mapping` section is captured and returned as manual follow-up guidance; it is not yet persisted by the engine because tenant and upstream-project mapping remains outside the current control-plane contract.
 
 ## Usage
 
@@ -255,6 +265,7 @@ The SDK intentionally keeps tenant resolution and token forwarding explicit. It 
   - `authorize.check`
   - `authorize.explain`
   - `controlPlane.createApplication`
+  - `applyOnboardingManifest(options)` validates and applies a reviewed onboarding manifest over the SDK control-plane APIs.
   - `controlPlane.createGroup`
   - `controlPlane.createGroupMembership`
   - `controlPlane.createPermission`

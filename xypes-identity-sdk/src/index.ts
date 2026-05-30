@@ -47,3 +47,13 @@ export {
   type XypesIdentityTenantIdResolver,
   type XypesIdentityTokenResolver,
 } from "./middleware.js";
+
+export {
+  applyOnboardingManifest,
+  isXypesIdentityOnboardingManifestError,
+  XypesIdentityOnboardingManifestError,
+  type ApplyOnboardingManifestOptions,
+  type ApplyOnboardingManifestResult,
+  type XypesIdentityOnboardingControlPlaneClient,
+  type XypesIdentityOnboardingManifest,
+} from "./onboarding.js";

@@ -1,6 +1,6 @@
 # Admin
 
-Minimal admin API scaffold for the xypes-identity platform. This repo currently exposes thin Fastify routes that delegate privileged control-plane mutations to the engine through the local SDK. It does not enforce authorization locally and does not access engine storage directly. It now also includes a small admin-owned governance console for access review workbench flows.
+Minimal admin API scaffold for the xypes-identity platform. This repo currently exposes thin Fastify routes that delegate privileged control-plane mutations to the engine through the local SDK. It does not enforce authorization locally and does not access engine storage directly. It now also includes small admin-owned governance consoles for access review workbench flows and guided onboarding preview or apply flows.
 
 ## Phase 5 safety surfacing
 
@@ -15,7 +15,10 @@ This repo does not currently proxy the engine decision endpoints or session-reso
 
 - `POST /admin/access-reviews/findings` forwards access review findings queries to the engine via the SDK and returns the engine's generated findings payload unchanged, including additive finding fields such as `role_binding_status` when present.
 - `POST /admin/access-reviews/workbench` builds an admin-facing review workbench payload on top of the raw findings query so a future UI can render grouped review sections and approval-activation candidates without inventing local policy.
-- `GET /admin/access-reviews/console` serves a small admin-owned governance console that uses the workbench, activation, and audit endpoints directly from the browser.
+- `GET /admin/access-reviews/console` serves a small admin-owned governance console that uses the workbench, activation, and audit endpoints directly from the browser, now with explicit candidate selection, an activation confirmation step, and latest audit-event visibility for privileged approvals.
+- `GET /admin/onboarding/console` serves a small admin-owned onboarding console that captures Supabase project and tenant-routing decisions, previews the SDK onboarding manifest plan, and applies the reviewed manifest through the existing SDK control-plane client.
+- `POST /admin/onboarding/preview` runs the SDK onboarding manifest helper in dry-run mode and returns planned control-plane actions plus manual mapping follow-up steps.
+- `POST /admin/onboarding/apply` applies the reviewed onboarding manifest through the SDK helper, while still surfacing tenant and upstream-project mapping as manual capture only.
 - `POST /admin/audit-events/query` forwards tenant-scoped audit event queries to the engine via the SDK and returns the engine's persisted audit rows unchanged, including before and after payloads for privileged control-plane changes.
 
 ## Endpoints
@@ -23,8 +26,11 @@ This repo does not currently proxy the engine decision endpoints or session-reso
 - `POST /admin/role-definitions`
 - `PATCH /admin/role-definitions/:role_definition_id/status`
 - `GET /admin/access-reviews/console`
+- `GET /admin/onboarding/console`
 - `POST /admin/access-reviews/findings`
 - `POST /admin/access-reviews/workbench`
+- `POST /admin/onboarding/preview`
+- `POST /admin/onboarding/apply`
 - `POST /admin/audit-events/query`
 - `POST /admin/applications`
 - `POST /admin/groups`

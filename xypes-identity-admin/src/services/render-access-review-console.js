@@ -115,6 +115,11 @@ export const renderAccessReviewConsole = () => `<!doctype html>
       }
 
       button.secondary { background: linear-gradient(135deg, #9d3c2b, #c8653d); }
+      button.tertiary {
+        background: transparent;
+        color: var(--ink);
+        border: 1px solid var(--line);
+      }
       button:disabled { opacity: 0.6; cursor: progress; }
       .status { min-height: 20px; color: var(--muted); font-size: 0.82rem; }
       .summary-grid, .candidate-grid, .section-grid { display: grid; gap: 12px; }
@@ -141,6 +146,40 @@ export const renderAccessReviewConsole = () => `<!doctype html>
       .pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; }
       .pill { border-radius: 999px; padding: 6px 10px; background: var(--accent-soft); }
       .candidate { border-left: 4px solid var(--accent); }
+      .candidate.selected {
+        border-left-color: #35554a;
+        box-shadow: inset 0 0 0 1px rgba(53, 85, 74, 0.2);
+      }
+      .candidate-actions {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+        margin-top: 12px;
+      }
+      .selection-card {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.72);
+        padding: 14px;
+      }
+      .selection-card strong {
+        display: block;
+        margin-bottom: 8px;
+        font-family: "IBM Plex Mono", "Cascadia Mono", Consolas, monospace;
+      }
+      .confirm-label {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        text-transform: none;
+        letter-spacing: 0;
+        font-size: 0.85rem;
+      }
+      .confirm-label input {
+        width: auto;
+        margin-top: 2px;
+      }
       .finding.high { border-left: 4px solid var(--accent); }
       .finding.medium { border-left: 4px solid var(--warn); }
       pre { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.8rem; color: var(--ink); }
@@ -185,18 +224,21 @@ export const renderAccessReviewConsole = () => `<!doctype html>
             <div class="eyebrow">Approval Activation</div>
             <form id="activation-form">
               <label>Role Binding Id<input id="role-binding-id" placeholder="binding_123" required /></label>
+              <div id="selected-candidate" class="empty">Select a candidate from the workbench before activating privileged access.</div>
               <div class="row">
                 <label>Actor Principal Id<input id="actor-principal-id" placeholder="principal_approver" /></label>
                 <label>Actor Subject<input id="actor-subject" value="approver@example.com" required /></label>
               </div>
               <label>Reason<textarea id="activation-reason" required>Approval completed</textarea></label>
-              <button id="activate-binding" class="secondary" type="submit">Activate eligible binding</button>
+              <label class="confirm-label"><input id="activation-confirmation" type="checkbox" required />I confirm this privileged action should move the selected binding from eligible to active.</label>
+              <button id="activate-binding" class="secondary" type="submit">Activate selected binding</button>
             </form>
             <div id="activation-status" class="status"></div>
           </section>
 
           <section class="panel">
             <div class="eyebrow">Audit Evidence</div>
+            <div id="audit-event-id" class="status">Latest audit event id: pending</div>
             <pre id="audit-output">Load the workbench or activate a binding to query audit evidence.</pre>
           </section>
         </div>
@@ -211,7 +253,13 @@ export const renderAccessReviewConsole = () => `<!doctype html>
     </main>
 
     <script>
-      const state = { latestTenantId: 'tenant_123', latestRoleBindingId: null };
+      const state = {
+        latestTenantId: 'tenant_123',
+        latestRoleBindingId: null,
+        latestCandidates: [],
+        selectedCandidate: null,
+        latestAuditEventId: null,
+      };
       const reviewForm = document.getElementById('review-form');
       const activationForm = document.getElementById('activation-form');
       const reviewStatus = document.getElementById('review-status');
@@ -220,9 +268,12 @@ export const renderAccessReviewConsole = () => `<!doctype html>
       const candidatesRoot = document.getElementById('approval-candidates');
       const sectionsRoot = document.getElementById('workbench-sections');
       const auditOutput = document.getElementById('audit-output');
+      const auditEventId = document.getElementById('audit-event-id');
       const loadButton = document.getElementById('load-review');
       const activateButton = document.getElementById('activate-binding');
       const roleBindingInput = document.getElementById('role-binding-id');
+      const selectedCandidateRoot = document.getElementById('selected-candidate');
+      const activationConfirmationInput = document.getElementById('activation-confirmation');
 
       const setStatus = (element, message, isError) => {
         element.textContent = message;
@@ -230,6 +281,45 @@ export const renderAccessReviewConsole = () => `<!doctype html>
       };
 
       const toCodes = (rawValue) => rawValue.split(',').map((value) => value.trim()).filter(Boolean);
+
+      const setLatestAuditEventId = (value) => {
+        state.latestAuditEventId = value;
+        auditEventId.textContent = value
+          ? 'Latest audit event id: ' + value
+          : 'Latest audit event id: pending';
+      };
+
+      const describeScope = (candidate) => {
+        if (!candidate || !candidate.scope_type) {
+          return 'none';
+        }
+        if (candidate.scope_type === 'application') {
+          return 'application ' + (candidate.scope_application_id || 'unknown');
+        }
+        if (candidate.scope_type === 'resource') {
+          return 'resource ' + (candidate.scope_resource_type || 'unknown') + ':' + (candidate.scope_resource_id || 'unknown');
+        }
+        return candidate.scope_type;
+      };
+
+      const renderSelectedCandidate = () => {
+        if (!state.selectedCandidate) {
+          selectedCandidateRoot.className = 'empty';
+          selectedCandidateRoot.textContent = 'Select a candidate from the workbench before activating privileged access.';
+          return;
+        }
+        selectedCandidateRoot.className = 'selection-card';
+        selectedCandidateRoot.innerHTML = '<strong>Selected approval target</strong><div class="meta">Binding ' + state.selectedCandidate.entity_id + '</div><div class="pill-row"><span class="pill">role ' + (state.selectedCandidate.role_definition_name || 'unknown') + '</span><span class="pill">subject ' + (state.selectedCandidate.subject_principal_id || state.selectedCandidate.subject_group_id || 'unassigned') + '</span><span class="pill">scope ' + describeScope(state.selectedCandidate) + '</span></div><p>' + state.selectedCandidate.detail + '</p>';
+      };
+
+      const selectCandidate = (candidateId) => {
+        state.selectedCandidate = state.latestCandidates.find((candidate) => candidate.entity_id === candidateId) || null;
+        state.latestRoleBindingId = candidateId;
+        roleBindingInput.value = candidateId;
+        renderSelectedCandidate();
+        renderCandidates(state.latestCandidates);
+        setStatus(activationStatus, 'Selected binding ' + candidateId + '. Review the reason and confirm activation before submitting.', false);
+      };
 
       const requestJson = async (path, body, method = 'POST') => {
         const response = await fetch(path, {
@@ -261,7 +351,18 @@ export const renderAccessReviewConsole = () => `<!doctype html>
           candidatesRoot.innerHTML = '<div class="empty">No approval activation candidates are currently eligible.</div>';
           return;
         }
-        candidatesRoot.innerHTML = candidates.map((candidate) => '<article class="candidate"><div class="section-header"><h3>' + candidate.title + '</h3><span class="pill">' + candidate.entity_id + '</span></div><div class="meta">Observed ' + candidate.observed_at + '</div><p>' + candidate.detail + '</p><div class="pill-row"><span class="pill">role ' + (candidate.role_definition_name || 'unknown') + '</span><span class="pill">subject ' + (candidate.subject_principal_id || candidate.subject_group_id || 'unassigned') + '</span><span class="pill">scope ' + (candidate.scope_type || 'none') + '</span></div></article>').join('');
+        candidatesRoot.innerHTML = candidates.map((candidate) => {
+          const isSelected = state.selectedCandidate && state.selectedCandidate.entity_id === candidate.entity_id;
+          return '<article class="candidate ' + (isSelected ? 'selected' : '') + '"><div class="section-header"><h3>' + candidate.title + '</h3><span class="pill">' + candidate.entity_id + '</span></div><div class="meta">Observed ' + candidate.observed_at + '</div><p>' + candidate.detail + '</p><div class="pill-row"><span class="pill">role ' + (candidate.role_definition_name || 'unknown') + '</span><span class="pill">subject ' + (candidate.subject_principal_id || candidate.subject_group_id || 'unassigned') + '</span><span class="pill">scope ' + describeScope(candidate) + '</span></div><div class="candidate-actions"><span class="meta">Explicit selection is required before activation.</span><button class="tertiary" type="button" data-candidate-id="' + candidate.entity_id + '" ' + (isSelected ? 'disabled' : '') + '>' + (isSelected ? 'Selected' : 'Select candidate') + '</button></div></article>';
+        }).join('');
+        candidatesRoot.querySelectorAll('[data-candidate-id]').forEach((button) => {
+          button.addEventListener('click', () => {
+            const candidateId = button.getAttribute('data-candidate-id');
+            if (candidateId) {
+              selectCandidate(candidateId);
+            }
+          });
+        });
       };
 
       const renderSections = (sections) => {
@@ -275,6 +376,7 @@ export const renderAccessReviewConsole = () => `<!doctype html>
 
       const loadAudit = async (tenantId, roleBindingId) => {
         if (!roleBindingId) {
+          setLatestAuditEventId(null);
           auditOutput.textContent = 'No role binding selected yet.';
           return;
         }
@@ -285,7 +387,38 @@ export const renderAccessReviewConsole = () => `<!doctype html>
           entity_id: roleBindingId,
           limit: 10,
         });
+        const latestEvent = Array.isArray(payload.events)
+          ? payload.events.reduce((currentLatest, event) => {
+              if (!currentLatest) {
+                return event;
+              }
+              return Date.parse(event.occurred_at) > Date.parse(currentLatest.occurred_at)
+                ? event
+                : currentLatest;
+            }, null)
+          : null;
+        setLatestAuditEventId(latestEvent ? latestEvent.audit_event_id : null);
         auditOutput.textContent = JSON.stringify(payload, null, 2);
+      };
+
+      const loadWorkbench = async (preserveSelection = false) => {
+        const tenantId = document.getElementById('tenant-id').value.trim();
+        const response = await requestJson('/admin/access-reviews/workbench', {
+          tenant_id: tenantId,
+          stale_after_days: Number(document.getElementById('stale-after-days').value),
+          limit: Number(document.getElementById('limit').value),
+          finding_codes: toCodes(document.getElementById('finding-codes').value),
+        });
+        state.latestTenantId = tenantId;
+        state.latestCandidates = response.approval_activation_candidates;
+        state.selectedCandidate = preserveSelection
+          ? response.approval_activation_candidates.find((candidate) => candidate.entity_id === state.latestRoleBindingId) || null
+          : null;
+        renderSummary(response.summary);
+        renderCandidates(response.approval_activation_candidates);
+        renderSections(response.sections);
+        renderSelectedCandidate();
+        await loadAudit(state.latestTenantId, state.latestRoleBindingId || roleBindingInput.value.trim());
       };
 
       reviewForm.addEventListener('submit', async (event) => {
@@ -293,23 +426,8 @@ export const renderAccessReviewConsole = () => `<!doctype html>
         loadButton.disabled = true;
         setStatus(reviewStatus, 'Loading access review workbench...', false);
         try {
-          const tenantId = document.getElementById('tenant-id').value.trim();
-          const response = await requestJson('/admin/access-reviews/workbench', {
-            tenant_id: tenantId,
-            stale_after_days: Number(document.getElementById('stale-after-days').value),
-            limit: Number(document.getElementById('limit').value),
-            finding_codes: toCodes(document.getElementById('finding-codes').value),
-          });
-          state.latestTenantId = tenantId;
-          const firstCandidate = response.approval_activation_candidates[0];
-          if (firstCandidate) {
-            state.latestRoleBindingId = firstCandidate.entity_id;
-            roleBindingInput.value = firstCandidate.entity_id;
-          }
-          renderSummary(response.summary);
-          renderCandidates(response.approval_activation_candidates);
-          renderSections(response.sections);
-          await loadAudit(state.latestTenantId, state.latestRoleBindingId);
+          state.latestRoleBindingId = roleBindingInput.value.trim() || null;
+          await loadWorkbench(true);
           setStatus(reviewStatus, 'Workbench refreshed from /admin/access-reviews/workbench.', false);
         } catch (error) {
           setStatus(reviewStatus, error.message, true);
@@ -325,6 +443,12 @@ export const renderAccessReviewConsole = () => `<!doctype html>
         try {
           const tenantId = document.getElementById('tenant-id').value.trim();
           const roleBindingId = roleBindingInput.value.trim();
+          if (!roleBindingId) {
+            throw new Error('Select an approval candidate or enter a role binding id before activation.');
+          }
+          if (!activationConfirmationInput.checked) {
+            throw new Error('Confirm activation before submitting this privileged action.');
+          }
           state.latestTenantId = tenantId;
           state.latestRoleBindingId = roleBindingId;
           await requestJson('/admin/role-bindings/' + encodeURIComponent(roleBindingId) + '/status', {
@@ -334,14 +458,24 @@ export const renderAccessReviewConsole = () => `<!doctype html>
             actor_subject: document.getElementById('actor-subject').value.trim(),
             reason: document.getElementById('activation-reason').value.trim(),
           }, 'PATCH');
-          await loadAudit(state.latestTenantId, state.latestRoleBindingId);
-          setStatus(activationStatus, 'Binding activated. Refresh the workbench to confirm candidate removal.', false);
+          activationConfirmationInput.checked = false;
+          state.selectedCandidate = null;
+          await loadWorkbench(false);
+          setStatus(
+            activationStatus,
+            state.latestAuditEventId
+              ? 'Binding activated. Latest audit event id: ' + state.latestAuditEventId
+              : 'Binding activated. Latest audit event id is pending.',
+            false,
+          );
         } catch (error) {
           setStatus(activationStatus, error.message, true);
         } finally {
           activateButton.disabled = false;
         }
       });
+
+      renderSelectedCandidate();
     </script>
   </body>
 </html>`;

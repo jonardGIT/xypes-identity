@@ -1,0 +1,28 @@
+# Dependencies
+**/node_modules/
+
+# Build outputs
+**/dist/
+**/.next/
+**/.turbo/
+
+# TypeScript and test caches
+**/*.tsbuildinfo
+**/coverage/
+
+# Local environment files
+.env
+.env.*
+!.env.example
+!**/.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS noise
+.DS_Store
+Thumbs.db

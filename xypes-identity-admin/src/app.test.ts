@@ -43,9 +43,10 @@ import {
   type AdminOperationsClient,
 } from "./app.js";
 
-const createUnexpectedMethod = (methodName: string) => async (): Promise<never> => {
-  throw new Error(`Unexpected ${methodName} call`);
-};
+const createUnexpectedMethod =
+  (methodName: string) => async (): Promise<never> => {
+    throw new Error(`Unexpected ${methodName} call`);
+  };
 
 const createControlPlaneStub = (
   overrides: Partial<AdminControlPlaneClient> = {},
@@ -58,7 +59,9 @@ const createControlPlaneStub = (
   listPermissions: createUnexpectedMethod("listPermissions"),
   createRoleDefinition: createUnexpectedMethod("createRoleDefinition"),
   listRoleDefinitions: createUnexpectedMethod("listRoleDefinitions"),
-  updateRoleDefinitionStatus: createUnexpectedMethod("updateRoleDefinitionStatus"),
+  updateRoleDefinitionStatus: createUnexpectedMethod(
+    "updateRoleDefinitionStatus",
+  ),
   createRoleBinding: createUnexpectedMethod("createRoleBinding"),
   updateRoleBindingStatus: createUnexpectedMethod("updateRoleBindingStatus"),
   attachRolePermission: createUnexpectedMethod("attachRolePermission"),
@@ -377,7 +380,8 @@ const listAccessReviewFindingsResponse: ListAccessReviewFindingsResponse = {
       entity_type: "role_binding",
       entity_id: "binding_123",
       title: "Stale role binding",
-      detail: "The role binding has not been reviewed within the configured window.",
+      detail:
+        "The role binding has not been reviewed within the configured window.",
       evidence_ids: ["binding_123", "role_123"],
       observed_at: "2026-05-28T10:14:00.000Z",
       scope_type: "application",
@@ -432,7 +436,8 @@ const listAccessReviewWorkbenchResponse: ListAccessReviewFindingsResponse = {
       entity_type: "role_binding",
       entity_id: "binding_active_123",
       title: "Stale role binding",
-      detail: "The role binding has not been reviewed within the configured window.",
+      detail:
+        "The role binding has not been reviewed within the configured window.",
       evidence_ids: ["binding_active_123", "role_123"],
       observed_at: "2026-05-28T10:14:00.000Z",
       scope_type: "application",
@@ -824,6 +829,10 @@ test("GET /admin/access-reviews/console serves the admin governance console shel
   assert.match(response.body, /Governance review console/);
   assert.match(response.body, /\/admin\/access-reviews\/workbench/);
   assert.match(response.body, /\/admin\/role-bindings\//);
+  assert.match(response.body, /Select candidate/);
+  assert.match(response.body, /Selected approval target/);
+  assert.match(response.body, /Confirm activation/);
+  assert.match(response.body, /Latest audit event id/);
 });
 
 test("POST /admin/access-reviews/workbench shapes access review findings for admin UI consumption", async (t) => {
@@ -998,17 +1007,33 @@ test("GET /admin/operations/diagnostics reshapes engine telemetry for operator v
         title: "Token Validation Failures",
         items: [
           { label: "invalid_or_expired_tokens", value: 2, status: "warning" },
-          { label: "jwks_or_verification_failures", value: 1, status: "attention" },
+          {
+            label: "jwks_or_verification_failures",
+            value: 1,
+            status: "attention",
+          },
           { label: "tenant_access_failures", value: 1, status: "warning" },
-          { label: "last_error_code", value: "AUTH_JWKS_UNAVAILABLE", status: "warning" },
+          {
+            label: "last_error_code",
+            value: "AUTH_JWKS_UNAVAILABLE",
+            status: "warning",
+          },
         ],
       },
       {
         key: "authorization_latency",
         title: "Authorization Latency",
         items: [
-          { label: "average_authorize_check_duration_ms", value: 9, status: "healthy" },
-          { label: "average_authorize_explain_duration_ms", value: 17, status: "healthy" },
+          {
+            label: "average_authorize_check_duration_ms",
+            value: 9,
+            status: "healthy",
+          },
+          {
+            label: "average_authorize_explain_duration_ms",
+            value: 17,
+            status: "healthy",
+          },
           { label: "decision_cache_hit_count", value: 14, status: "healthy" },
           { label: "expansion_cache_hit_count", value: 2, status: "healthy" },
         ],
@@ -1017,10 +1042,22 @@ test("GET /admin/operations/diagnostics reshapes engine telemetry for operator v
         key: "rollout_diagnostics",
         title: "Rollout Diagnostics",
         items: [
-          { label: "bridge_failure_visibility_ready", value: true, status: "healthy" },
-          { label: "decision_latency_visibility_ready", value: true, status: "healthy" },
+          {
+            label: "bridge_failure_visibility_ready",
+            value: true,
+            status: "healthy",
+          },
+          {
+            label: "decision_latency_visibility_ready",
+            value: true,
+            status: "healthy",
+          },
           { label: "replay_visibility_ready", value: true, status: "healthy" },
-          { label: "identity_lifecycle_visibility_ready", value: false, status: "inactive" },
+          {
+            label: "identity_lifecycle_visibility_ready",
+            value: false,
+            status: "inactive",
+          },
         ],
       },
     ],
@@ -1153,60 +1190,60 @@ for (const testCase of createRouteTestCases) {
   });
 }
 
-  const queryRouteTestCases = [
-    {
-      name: "POST /admin/applications/query delegates successful listing to the SDK client",
-      methodName: "listApplications",
-      url: "/admin/applications/query",
-      payload: listApplicationsRequest,
-      responseBody: listApplicationsResponse,
-    },
-    {
-      name: "POST /admin/permissions/query delegates successful listing to the SDK client",
-      methodName: "listPermissions",
-      url: "/admin/permissions/query",
-      payload: listPermissionsRequest,
-      responseBody: listPermissionsResponse,
-    },
-  ] as const satisfies ReadonlyArray<{
-    name: string;
-    methodName: keyof AdminControlPlaneClient;
-    url: string;
-    payload: unknown;
-    responseBody: unknown;
-  }>;
+const queryRouteTestCases = [
+  {
+    name: "POST /admin/applications/query delegates successful listing to the SDK client",
+    methodName: "listApplications",
+    url: "/admin/applications/query",
+    payload: listApplicationsRequest,
+    responseBody: listApplicationsResponse,
+  },
+  {
+    name: "POST /admin/permissions/query delegates successful listing to the SDK client",
+    methodName: "listPermissions",
+    url: "/admin/permissions/query",
+    payload: listPermissionsRequest,
+    responseBody: listPermissionsResponse,
+  },
+] as const satisfies ReadonlyArray<{
+  name: string;
+  methodName: keyof AdminControlPlaneClient;
+  url: string;
+  payload: unknown;
+  responseBody: unknown;
+}>;
 
-  for (const testCase of queryRouteTestCases) {
-    test(testCase.name, async (t) => {
-      let capturedRequest: unknown;
+for (const testCase of queryRouteTestCases) {
+  test(testCase.name, async (t) => {
+    let capturedRequest: unknown;
 
-      const app = await buildApp({
-        audit: createAuditStub(),
-        accessReviews: createAccessReviewStub(),
-        logger: false,
-        controlPlane: createControlPlaneStub({
-          [testCase.methodName]: async (request: unknown) => {
-            capturedRequest = request;
-            return testCase.responseBody;
-          },
-        }),
-      });
-
-      t.after(async () => {
-        await app.close();
-      });
-
-      const response = await app.inject({
-        method: "POST",
-        url: testCase.url,
-        payload: testCase.payload,
-      });
-
-      assert.equal(response.statusCode, 200);
-      assert.deepEqual(capturedRequest, testCase.payload);
-      assert.deepEqual(response.json(), testCase.responseBody);
+    const app = await buildApp({
+      audit: createAuditStub(),
+      accessReviews: createAccessReviewStub(),
+      logger: false,
+      controlPlane: createControlPlaneStub({
+        [testCase.methodName]: async (request: unknown) => {
+          capturedRequest = request;
+          return testCase.responseBody;
+        },
+      }),
     });
-  }
+
+    t.after(async () => {
+      await app.close();
+    });
+
+    const response = await app.inject({
+      method: "POST",
+      url: testCase.url,
+      payload: testCase.payload,
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.deepEqual(capturedRequest, testCase.payload);
+    assert.deepEqual(response.json(), testCase.responseBody);
+  });
+}
 
 test("POST /admin/access-reviews/findings delegates successful listing to the SDK client", async (t) => {
   let capturedRequest: ListAccessReviewFindingsRequest | undefined;

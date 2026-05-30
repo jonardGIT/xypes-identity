@@ -6,6 +6,7 @@ This document describes the minimum remote-host setup that turns the checked-in 
 
 - a GitHub Actions verification workflow at `./.github/workflows/verify.yml`
 - a PR template at `./.github/pull_request_template.md`
+- a baseline `./.github/CODEOWNERS` file for ownership routing
 - repo-local and workspace-level Copilot instruction surfaces for ownership and validation guidance
 
 Those files are necessary, but they are not sufficient on their own. The remote host must still be configured to require them.
@@ -21,9 +22,82 @@ Those files are necessary, but they are not sufficient on their own. The remote 
 7. Prevent direct pushes to the protected branch except for explicitly trusted maintainers if needed.
 8. Enable conversation resolution before merge if the team wants review threads treated as blockers.
 
+## Exact GitHub settings to configure
+
+Use the repository web UI for `jonardGIT/xypes-identity`.
+
+### 1. Actions
+
+Open:
+
+- `Repository` -> `Settings` -> `Actions` -> `General`
+
+Set:
+
+- `Actions permissions`: allow actions to run for the repository
+- `Workflow permissions`: `Read repository contents permission`
+
+Then verify that `.github/workflows/verify.yml` is present under:
+
+- `Repository` -> `Actions`
+
+Expected workflow name:
+
+- `Verify`
+
+### 2. Default branch
+
+Open:
+
+- `Repository` -> `Settings` -> `Branches`
+
+Set:
+
+- `Default branch`: `main`
+
+### 3. Ruleset or branch protection
+
+Preferred path on current GitHub UI:
+
+- `Repository` -> `Settings` -> `Rules` -> `Rulesets` -> `New ruleset` -> `New branch ruleset`
+
+If the repository still shows the older UI, use:
+
+- `Repository` -> `Settings` -> `Branches` -> `Add branch protection rule`
+
+Configure the rule for:
+
+- branch target: `main`
+
+Enable at minimum:
+
+- `Require a pull request before merging`
+- `Require approvals`: `1`
+- `Require review from Code Owners`
+- `Require status checks to pass before merging`
+- required status check: `Verify`
+- `Require conversation resolution before merging`
+- `Block force pushes`
+- `Block deletions`
+
+Set direct push restrictions according to your maintainer policy. If you want fully PR-only flow, do not allow bypass for normal contributors.
+
+### 4. CODEOWNERS expectations
+
+Open:
+
+- `Repository` -> `Code`
+- inspect `/.github/CODEOWNERS`
+
+Current baseline routes to:
+
+- `@jonardGIT`
+
+Refine that file later when real teams or separate reviewers are available.
+
 ## Recommended next controls
 
-1. Add a real `CODEOWNERS` file once the owning users or teams are known.
+1. Replace the baseline `CODEOWNERS` entries with real users or teams once the owning reviewers are finalized.
 2. Require at least one human review for sensitive paths such as engine authorization semantics, shared contracts, session resolution, audit shape, and cache invalidation.
 3. Enable secret scanning and dependency alerting if the hosting plan supports them.
 4. Add a release or deployment gate only after rollout evidence expectations are executable and not merely documented.
@@ -31,7 +105,7 @@ Those files are necessary, but they are not sufficient on their own. The remote 
 ## Important limits
 
 - The checked-in workflow creates executable CI, but it does not become merge-blocking until the remote branch protection or ruleset requires it.
-- A private remote does not automatically create CODEOWNERS enforcement, review routing, or protected branches.
+- The baseline `CODEOWNERS` file does not create review enforcement on its own; branch protection or rulesets must still require reviews.
 - If GitHub Actions is disabled for the private repository or unavailable on the current plan, the workflow file remains inert until Actions is enabled.
 
 ## Expected result after setup

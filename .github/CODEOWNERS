@@ -1,0 +1,11 @@
+# Baseline single-owner routing. Replace with team-specific ownership as review
+# routing matures.
+* @jonardGIT
+
+# Sensitive platform boundaries
+/xypes-identity-engine/ @jonardGIT
+/xypes-identity-admin/ @jonardGIT
+/xypes-identity-sdk/ @jonardGIT
+/shared/ @jonardGIT
+/docs/ @jonardGIT
+/.github/ @jonardGIT

@@ -29,6 +29,8 @@ class RecordingOperationalTelemetry implements OperationalTelemetryRecorder {
 
   async recordReplayBatch() {}
 
+  async recordIdentityReconciliation() {}
+
   async getSnapshot(): Promise<never> {
     throw new Error("unused in this test");
   }

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { buildApp } from "../app.js";
+import type { IdentityReconciliationRepository } from "../domain/identity-reconciliation-types.js";
 import type { OperationalTelemetryRecorder } from "../domain/operational-telemetry-types.js";
 
 class StaticOperationalTelemetry implements OperationalTelemetryRecorder {
@@ -10,6 +11,8 @@ class StaticOperationalTelemetry implements OperationalTelemetryRecorder {
   async recordAuthorization() {}
 
   async recordReplayBatch() {}
+
+  async recordIdentityReconciliation() {}
 
   async getSnapshot(generatedAt: string) {
     return {
@@ -90,6 +93,53 @@ test("GET /v1/operations/telemetry returns the operational telemetry snapshot", 
   assert.equal(response.statusCode, 200);
   assert.equal(response.json().resolve_session.token_failure_count, 1);
   assert.equal(response.json().replay.batches_processed_total, 2);
+});
+
+class StaticIdentityReconciliationRepository implements IdentityReconciliationRepository {
+  async scanIdentityReconciliation() {
+    return {
+      principals_scanned: 4,
+      tenant_memberships_scanned: 3,
+      anomalies: [
+        {
+          code: "ORPHANED_PRINCIPAL" as const,
+          principal_id: "principal-2",
+          subject: "supabase-user-2",
+          tenant_id: null,
+          observed_count: 1,
+        },
+      ],
+    };
+  }
+}
+
+test("POST /v1/operations/identity-reconciliation/run returns the reconciliation summary", async (t) => {
+  const app = await buildApp({
+    clock: {
+      now: () => new Date("2026-05-29T00:05:00.000Z"),
+    },
+    operationalTelemetry: new StaticOperationalTelemetry(),
+    identityReconciliation: {
+      identityReconciliationRepository: new StaticIdentityReconciliationRepository(),
+      clock: {
+        now: () => new Date("2026-05-29T00:05:00.000Z"),
+      },
+    },
+  });
+
+  t.after(async () => {
+    await app.close();
+  });
+
+  const response = await app.inject({
+    method: "POST",
+    url: "/v1/operations/identity-reconciliation/run",
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.json().status, "drift_detected");
+  assert.equal(response.json().summary.orphaned_principals, 1);
+  assert.equal(response.json().summary.principals_scanned, 4);
 });
 
 test("GET /v1/meta/api-reference publishes the shared core auth reference", async (t) => {

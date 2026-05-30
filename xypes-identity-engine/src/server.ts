@@ -91,9 +91,10 @@ const authorizationCache: AuthorizationCacheDependencies = {
 };
 
 const operationalTelemetry = new RedisOperationalTelemetryStore(redisClient);
+const principalRepository = new PostgresPrincipalRepository(pool);
 
 const dependencies: ResolveSessionDependencies = {
-  principalRepository: new PostgresPrincipalRepository(pool),
+  principalRepository,
   tokenVerifier,
   auditPublisher,
   decisionIdGenerator,
@@ -203,6 +204,11 @@ const rolePermissionAttachDependencies: AttachRolePermissionDependencies = {
 
 const app = await buildApp({
   ...dependencies,
+  identityReconciliation: {
+    identityReconciliationRepository: principalRepository,
+    clock,
+    operationalTelemetry,
+  },
   auditRead: auditReadDependencies,
   accessReviewRead: accessReviewReadDependencies,
   applicationCreate: applicationCreateDependencies,

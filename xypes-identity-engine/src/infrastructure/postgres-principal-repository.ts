@@ -1,4 +1,9 @@
 import type {
+  IdentityReconciliationAnomaly,
+  IdentityReconciliationRepository,
+  IdentityReconciliationSnapshot,
+} from "../domain/identity-reconciliation-types.js";
+import type {
   PrincipalRecord,
   PrincipalRepository,
   TenantMembershipRecord,
@@ -28,7 +33,21 @@ interface TenantMembershipRow extends QueryResultRow {
   status: "active" | "suspended";
 }
 
-export class PostgresPrincipalRepository implements PrincipalRepository {
+interface CountRow extends QueryResultRow {
+  total: string | number;
+}
+
+interface IdentityReconciliationAnomalyRow extends QueryResultRow {
+  code: IdentityReconciliationAnomaly["code"];
+  principal_id: string | null;
+  subject: string | null;
+  tenant_id: string | null;
+  observed_count: string | number;
+}
+
+export class PostgresPrincipalRepository
+  implements PrincipalRepository, IdentityReconciliationRepository
+{
   constructor(private readonly databaseClient: DatabaseClient) {}
 
   async findBySubject(subject: string): Promise<PrincipalRecord | null> {
@@ -76,6 +95,81 @@ export class PostgresPrincipalRepository implements PrincipalRepository {
       tenant_id: row.tenant_id,
       principal_id: row.principal_id,
       status: row.status,
+    };
+  }
+
+  async scanIdentityReconciliation(): Promise<IdentityReconciliationSnapshot> {
+    const principalCountResult = await this.databaseClient.query<CountRow>(
+      `SELECT COUNT(*) AS total
+       FROM principal`,
+      [],
+    );
+
+    const membershipCountResult = await this.databaseClient.query<CountRow>(
+      `SELECT COUNT(*) AS total
+       FROM tenant_membership`,
+      [],
+    );
+
+    const anomalyResult = await this.databaseClient.query<IdentityReconciliationAnomalyRow>(
+      `WITH orphaned_principals AS (
+         SELECT
+           'ORPHANED_PRINCIPAL'::text AS code,
+           principal.principal_id::text AS principal_id,
+           principal.subject,
+           NULL::text AS tenant_id,
+           1::bigint AS observed_count
+         FROM principal
+         LEFT JOIN tenant_membership
+           ON tenant_membership.principal_id = principal.principal_id
+         WHERE tenant_membership.principal_id IS NULL
+       ),
+       duplicate_subject_mappings AS (
+         SELECT
+           'DUPLICATE_SUBJECT_MAPPING'::text AS code,
+           NULL::text AS principal_id,
+           principal.subject,
+           NULL::text AS tenant_id,
+           COUNT(*)::bigint AS observed_count
+         FROM principal
+         GROUP BY principal.subject
+         HAVING COUNT(*) > 1
+       ),
+       suspended_principal_active_memberships AS (
+         SELECT
+           'SUSPENDED_PRINCIPAL_ACTIVE_MEMBERSHIP'::text AS code,
+           principal.principal_id::text AS principal_id,
+           principal.subject,
+           tenant_membership.tenant_id::text AS tenant_id,
+           1::bigint AS observed_count
+         FROM principal
+         INNER JOIN tenant_membership
+           ON tenant_membership.principal_id = principal.principal_id
+         WHERE principal.status = 'suspended'
+           AND tenant_membership.status = 'active'
+       )
+       SELECT code, principal_id, subject, tenant_id, observed_count
+       FROM orphaned_principals
+       UNION ALL
+       SELECT code, principal_id, subject, tenant_id, observed_count
+       FROM duplicate_subject_mappings
+       UNION ALL
+       SELECT code, principal_id, subject, tenant_id, observed_count
+       FROM suspended_principal_active_memberships
+       ORDER BY code, subject NULLS LAST, principal_id NULLS LAST, tenant_id NULLS LAST`,
+      [],
+    );
+
+    return {
+      principals_scanned: Number(principalCountResult.rows[0]?.total ?? 0),
+      tenant_memberships_scanned: Number(membershipCountResult.rows[0]?.total ?? 0),
+      anomalies: anomalyResult.rows.map((row) => ({
+        code: row.code,
+        principal_id: row.principal_id,
+        subject: row.subject,
+        tenant_id: row.tenant_id,
+        observed_count: Number(row.observed_count),
+      })),
     };
   }
 }

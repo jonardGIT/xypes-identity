@@ -40,7 +40,7 @@ Durable, cross-repo roadmap. For the operational execution playbook, see `../doc
 - Outage-mode policy for identity-provider failures with explicit fail-closed behavior for privileged operations
 - Metrics for token validation failures, webhook lag, cache hit ratio, and authorization latency
   - Current state: authorization check and explain now emit cache-path telemetry on the existing decision span surface, including cache status and cache-version attributes for the decision and expansion paths where applicable
-  - Current state: the engine now also exposes `/v1/operations/telemetry` for resolve-session failures, authorization latency, replay timing, and rollout-readiness snapshots, while identity lifecycle telemetry remains explicitly marked `not_configured` until webhook or reconciliation paths exist
+  - Current state: the engine now also exposes `/v1/operations/telemetry` for resolve-session failures, authorization latency, replay timing, rollout-readiness snapshots, and reconciliation-run counters; lifecycle telemetry now becomes active after the reconciliation scan route runs, while webhook lag visibility remains pending
 
 ## Phase 5: Governance and Safety
 
@@ -87,7 +87,7 @@ Durable, cross-repo roadmap. For the operational execution playbook, see `../doc
 - Rollout mechanics remain planned rather than implemented: internal pilot posture, shadow mode, per-tenant enforcement flags, and mismatch logging are not yet evidenced in the repo.
 - Rollout readiness artifacts are now documented through the threat model, auth-failure runbook, and staging gate, but they are not yet exercised with repeatable pilot evidence.
 - Developer onboarding is only partially automated: application, permission, and role-definition provisioning can now be driven from a reviewed SDK manifest, but there is still no first-class automation path for mapping new Supabase projects and tenants.
-- Operational identity-bridge hardening remains partial: webhook-driven lifecycle sync, deterministic reconciliation, and explicit identity-provider outage behavior are not yet evidenced end to end.
+- Operational identity-bridge hardening remains partial: a read-only deterministic reconciliation scan and anomaly reporting path now exist, but webhook-driven lifecycle sync and explicit identity-provider outage behavior are not yet evidenced end to end.
 - Migration and portability posture is still mostly architectural intent: exportable identity mappings, compliance-oriented data export, and a concrete IdP swap strategy are not yet represented as shipped platform capabilities.
 
 ### Misalignment To Resolve
@@ -122,18 +122,18 @@ Durable, cross-repo roadmap. For the operational execution playbook, see `../doc
 
 ### xypes-identity-engine
 
-- Add deterministic reconciliation jobs and anomaly reporting for `external_id -> principal` and tenant-membership drift.
+- Add automated scheduling and remediation workflows on top of the current deterministic reconciliation scan and anomaly reporting for `external_id -> principal` and tenant-membership drift.
 - Add explicit outage-mode and JWKS-failure behavior with deterministic error codes and fail-closed handling for privileged operations.
 - Add contract coverage for `POST /v1/auth/resolve-session` around issuer or audience mismatch, clock skew, and key rotation.
 - Add integration and chaos coverage for webhook ingestion, key rotation, and temporary upstream identity outages.
 - Expose standard export surfaces for identity mappings and audit data needed for migration and compliance.
 - Extend the current decision-path telemetry from cache-status span attributes into operator-facing metrics, dashboards, and rollout evidence.
-- Extend the current `/v1/operations/telemetry` snapshot with webhook and reconciliation counters once identity lifecycle sync paths exist.
+- Extend the current `/v1/operations/telemetry` snapshot from the shipped reconciliation counters into webhook lag and richer lifecycle anomaly dimensions once identity lifecycle sync paths exist.
 
 ### xypes-identity-admin
 
 - Extend the current access-review and audit workbench responses into broader operator-facing visibility for webhook lag, reconciliation failures, token validation failures, and authorization latency.
-- Current state: admin now exposes `/admin/operations/diagnostics` for token-validation failures, authorization latency, replay visibility, and rollout-readiness shaping from engine telemetry; webhook and reconciliation visibility remains pending engine support.
+- Current state: admin now exposes `/admin/operations/diagnostics` for token-validation failures, authorization latency, replay visibility, and rollout-readiness shaping from engine telemetry; webhook lag visibility remains pending, while reconciliation visibility can now build on the engine's new scan route and lifecycle counters.
 - Current state: admin also exposes `/admin/applications/query`, `/admin/permissions/query`, and `/admin/role-definitions/query` as thin proxies over the engine-backed SDK control-plane list methods.
 - Current state: the admin approval console now requires explicit candidate selection, operator confirmation before activation, latest audit-event visibility, and a synchronized workbench-plus-audit refresh after privileged activation, with focused renderer coverage to keep that workflow pinned.
 - Current state: admin now also exposes `/admin/onboarding/preview`, `/admin/onboarding/apply`, and `/admin/onboarding/console` as thin wrappers around the SDK onboarding manifest helper, including captured Supabase-project and tenant-routing metadata plus manual mapping steps.

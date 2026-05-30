@@ -26,9 +26,16 @@ export interface ReplayTelemetryInput {
   failed_count: number;
 }
 
+export interface IdentityReconciliationTelemetryInput {
+  occurred_at: string;
+  anomaly_count: number;
+  notes: string;
+}
+
 export interface OperationalTelemetryRecorder {
   recordResolveSession(input: ResolveSessionTelemetryInput): Promise<void>;
   recordAuthorization(input: AuthorizationTelemetryInput): Promise<void>;
   recordReplayBatch(input: ReplayTelemetryInput): Promise<void>;
+  recordIdentityReconciliation(input: IdentityReconciliationTelemetryInput): Promise<void>;
   getSnapshot(generatedAt: string): Promise<OperationalTelemetrySnapshot>;
 }

@@ -2,6 +2,7 @@ import type { OperationalTelemetrySnapshot } from "@xypes-identity/shared";
 
 import type {
   AuthorizationTelemetryInput,
+  IdentityReconciliationTelemetryInput,
   OperationalTelemetryRecorder,
   ReplayTelemetryInput,
   ResolveSessionTelemetryInput,
@@ -187,6 +188,20 @@ export class RedisOperationalTelemetryStore implements OperationalTelemetryRecor
       if (input.failed_count > 0) {
         snapshot.batches_with_failures_total += 1;
       }
+    });
+  }
+
+  async recordIdentityReconciliation(
+    input: IdentityReconciliationTelemetryInput,
+  ): Promise<void> {
+    await this.mutate((state) => {
+      const snapshot = state.identity_lifecycle;
+
+      snapshot.status = "active";
+      snapshot.reconciliation_runs_total += 1;
+      snapshot.reconciliation_anomalies_total += input.anomaly_count;
+      snapshot.last_reconciliation_at = input.occurred_at;
+      snapshot.notes = input.notes;
     });
   }
 

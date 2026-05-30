@@ -38,7 +38,7 @@ The minimum rollout-facing signal set is:
 | authorization latency                       | shows whether the decision path remains inside rollout SLOs                     | OpenTelemetry spans and request latency views                                                 | decision-path OpenTelemetry hooks exist in engine                                                                                                             | visible in non-production and tied to rollout evidence |
 | decision cache hit ratio                    | shows whether hot-path performance depends on cache behavior as expected        | cache metrics or span attributes aggregated into dashboards                                   | decision-path telemetry records cache hit or miss attributes on `authorize.check`                                                                             | aggregated ratio available during pilot                |
 | invalidation and replay latency             | shows whether membership or binding changes propagate inside revocation targets | worker metrics, replay timing, or invalidation lag views                                      | outbox and cache-version mechanisms exist and the worker now emits structured batch-duration logs; durable end-to-end latency evidence is not yet represented | measured for mutation-to-freshness path                |
-| webhook processing lag                      | shows whether upstream identity lifecycle changes are arriving fast enough      | webhook ingestion metrics or lag gauges                                                       | roadmap target only; webhook and reconciliation evidence remains partial                                                                                      | measured and page-worthy threshold defined             |
+| webhook processing lag                      | shows whether upstream identity lifecycle changes are arriving fast enough      | webhook ingestion metrics or lag gauges                                                       | roadmap target only; a manual reconciliation scan and lifecycle counters now exist, but webhook lag evidence remains partial                                   | measured and page-worthy threshold defined             |
 | `decision_id` propagation                   | lets operators correlate request, authorization, audit, and incident evidence   | structured logs, app logs, and pilot evidence                                                 | `decision_id` is already part of engine responses and consumer guidance                                                                                       | present in exercised pilot flows                       |
 
 ## Current Implementation Baseline
@@ -55,6 +55,7 @@ Current concrete evidence in the workspace includes:
 Current important limitation:
 
 - the workspace does not yet provide a single repeatable non-production evidence set proving that token validation failures, JWKS availability failures, invalidation latency, and webhook lag are measured and reviewed as rollout gates rather than as implementation intent
+- the engine now has a read-only reconciliation scan and lifecycle counters, but that still needs scheduled execution and operator-facing evidence before pilot expansion can depend on it
 
 ## Concrete Signal Expectations
 
@@ -130,7 +131,8 @@ Must answer:
 
 Current state:
 
-- this remains a rollout requirement rather than a demonstrated workspace capability
+- webhook lag remains a rollout requirement rather than a demonstrated workspace capability
+- reconciliation is now partially evidenced through the engine operations scan and lifecycle counters, but it is not yet a complete lifecycle-sync story without webhook ingestion and measured lag
 
 ### 6. Decision Traceability
 
@@ -184,6 +186,7 @@ Still missing or partial:
 - durable non-production dashboards or evidence for token validation failure rates
 - repeatable invalidation and replay latency evidence
 - webhook lag evidence
+- scheduled reconciliation evidence and operator-facing anomaly review flow
 - admin-side operator views that surface these signals directly
 
 ## Companion Documents

@@ -9,6 +9,7 @@ import type {
 import type { CreateDenyPolicyDependencies } from "./domain/deny-policy-types.js";
 import type { CreateGroupDependencies } from "./domain/group-types.js";
 import type { CreateGroupMembershipDependencies } from "./domain/group-membership-types.js";
+import type { RunIdentityReconciliationDependencies } from "./domain/identity-reconciliation-types.js";
 import type {
   CreatePermissionDependencies,
   ListPermissionsDependencies,
@@ -41,6 +42,7 @@ import { registerListPermissionsRoute } from "./routes/list-permissions-route.js
 import { registerCreateRoleBindingRoute } from "./routes/create-role-binding-route.js";
 import { registerCreateRoleDefinitionRoute } from "./routes/create-role-definition-route.js";
 import { registerListRoleDefinitionsRoute } from "./routes/list-role-definitions-route.js";
+import { registerOperationsIdentityReconciliationRoute } from "./routes/operations-identity-reconciliation-route.js";
 import { registerOperationsTelemetryRoute } from "./routes/operations-telemetry-route.js";
 import { registerResolveSessionRoute } from "./routes/resolve-session-route.js";
 import { registerUpdateRoleBindingStatusRoute } from "./routes/update-role-binding-status-route.js";
@@ -61,6 +63,7 @@ export interface AppDependencies {
   denyPolicyCreate?: CreateDenyPolicyDependencies;
   groupCreate?: CreateGroupDependencies;
   groupMembershipCreate?: CreateGroupMembershipDependencies;
+  identityReconciliation?: RunIdentityReconciliationDependencies;
   permissionCreate?: CreatePermissionDependencies;
   permissionRead?: ListPermissionsDependencies;
   roleBindingCreate?: CreateRoleBindingDependencies;
@@ -90,6 +93,10 @@ export const buildApp = async (
       operationalTelemetry: dependencies.operationalTelemetry,
       clock: dependencies.clock,
     });
+  }
+
+  if (dependencies.identityReconciliation !== undefined) {
+    await registerOperationsIdentityReconciliationRoute(app, dependencies.identityReconciliation);
   }
 
   if (

@@ -15,6 +15,8 @@ class RecordingOperationalTelemetry implements OperationalTelemetryRecorder {
     this.replayInputs.push(input);
   }
 
+  async recordIdentityReconciliation() {}
+
   async getSnapshot(): Promise<never> {
     throw new Error("unused in this test");
   }

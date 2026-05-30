@@ -4,6 +4,7 @@ import test from "node:test";
 import type { RoleDefinitionState } from "@xypes-identity/shared";
 import type {
   CreateRoleDefinitionPersistenceInput,
+  ListRoleDefinitionsRepositoryInput,
   RoleDefinitionRepository,
   UpdateRoleDefinitionStatusPersistenceInput,
 } from "../domain/role-definition-types.js";
@@ -14,6 +15,10 @@ class RecordingRoleDefinitionRepository implements RoleDefinitionRepository {
 
   async createRoleDefinition(input: CreateRoleDefinitionPersistenceInput): Promise<void> {
     this.input = input;
+  }
+
+  async listRoleDefinitions(_input: ListRoleDefinitionsRepositoryInput): Promise<RoleDefinitionState[]> {
+    throw new Error("unused in this test");
   }
 
   async updateRoleDefinitionStatus(

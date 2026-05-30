@@ -8,7 +8,10 @@ class RecordingTransactionClient {
   readonly calls: Array<{ queryText: string; values: readonly unknown[] }> = [];
   released = false;
 
-  constructor(private readonly failure: { atCall: number; error: Error } | null = null) {}
+  constructor(
+    private readonly failure: { atCall: number; error: Error } | null = null,
+    private readonly rowsByCall: Record<number, readonly unknown[]> = {},
+  ) {}
 
   async query<Row extends { [key: string]: unknown }>(
     queryText: string,
@@ -20,7 +23,9 @@ class RecordingTransactionClient {
       throw this.failure.error;
     }
 
-    return { rows: [] };
+    const rows = this.rowsByCall[this.calls.length];
+
+    return { rows: (rows ?? []) as Row[] };
   }
 
   release(): void {
@@ -99,5 +104,48 @@ test("PostgresApplicationRepository rolls back and maps duplicate tenant slugs t
   assert.equal(client.calls[0]?.queryText, "BEGIN");
   assert.match(client.calls[1]?.queryText ?? "", /INSERT INTO application/i);
   assert.equal(client.calls[2]?.queryText, "ROLLBACK");
+  assert.equal(client.released, true);
+});
+
+test("PostgresApplicationRepository lists applications with tenant-scoped filters", async () => {
+  const client = new RecordingTransactionClient(null, {
+    1: [
+      {
+        application_id: "application-1",
+        tenant_id: "tenant-1",
+        slug: "billing",
+        display_name: "Billing",
+        status: "active",
+        created_at: "2026-05-28T12:00:00.000Z",
+        updated_at: "2026-05-28T12:00:00.000Z",
+        created_by: "operator@example.com",
+        updated_by: "operator@example.com",
+      },
+    ],
+  });
+  const repository = new PostgresApplicationRepository(new RecordingTransactionPool(client));
+
+  const result = await repository.listApplications({
+    tenant_id: "tenant-1",
+    statuses: ["active"],
+    limit: 10,
+  });
+
+  assert.equal(client.calls.length, 1);
+  assert.match(client.calls[0]?.queryText ?? "", /FROM application/i);
+  assert.deepEqual(client.calls[0]?.values, ["tenant-1", ["active"], 10]);
+  assert.deepEqual(result, [
+    {
+      application_id: "application-1",
+      tenant_id: "tenant-1",
+      slug: "billing",
+      display_name: "Billing",
+      status: "active",
+      created_at: "2026-05-28T12:00:00.000Z",
+      updated_at: "2026-05-28T12:00:00.000Z",
+      created_by: "operator@example.com",
+      updated_by: "operator@example.com",
+    },
+  ]);
   assert.equal(client.released, true);
 });

@@ -53,3 +53,17 @@ export interface UpdateRoleDefinitionStatusResponse {
 }
 
 export type UpdateRoleDefinitionStatusErrorCode = "ROLE_DEFINITION_NOT_FOUND";
+
+export interface ListRoleDefinitionsRequest {
+  tenant_id: string;
+  limit?: number;
+  application_id?: string;
+  role_definition_ids?: string[];
+  statuses?: RoleDefinitionStatus[];
+  approval_required?: boolean;
+}
+
+export interface ListRoleDefinitionsResponse {
+  generated_at: string;
+  role_definitions: RoleDefinitionState[];
+}

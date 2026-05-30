@@ -3,6 +3,7 @@ import test from "node:test";
 
 import type {
   CreatePermissionPersistenceInput,
+  ListPermissionsRepositoryInput,
   PermissionRepository,
 } from "../domain/permission-types.js";
 import { createPermission } from "./create-permission.js";
@@ -12,6 +13,10 @@ class RecordingPermissionRepository implements PermissionRepository {
 
   async createPermission(input: CreatePermissionPersistenceInput): Promise<void> {
     this.input = input;
+  }
+
+  async listPermissions(_input: ListPermissionsRepositoryInput) {
+    return [];
   }
 }
 

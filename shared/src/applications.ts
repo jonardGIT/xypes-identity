@@ -29,3 +29,16 @@ export interface CreateApplicationResponse {
 }
 
 export type CreateApplicationErrorCode = "APPLICATION_DUPLICATE_TENANT_SLUG";
+
+export interface ListApplicationsRequest {
+  tenant_id: string;
+  limit?: number;
+  application_ids?: string[];
+  slug?: string;
+  statuses?: ApplicationState["status"][];
+}
+
+export interface ListApplicationsResponse {
+  generated_at: string;
+  applications: ApplicationState[];
+}

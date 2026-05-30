@@ -13,6 +13,10 @@ import type {
   CreatePermissionResponse,
   CreateRoleBindingRequest,
   CreateRoleBindingResponse,
+  ListApplicationsRequest,
+  ListApplicationsResponse,
+  ListPermissionsRequest,
+  ListPermissionsResponse,
   UpdateRoleBindingStatusRequest,
   UpdateRoleBindingStatusResponse,
   XypesIdentityClient,
@@ -30,6 +34,8 @@ export type ControlPlaneClient = Pick<
   | "createGroupMembership"
   | "createPermission"
   | "createRoleBinding"
+  | "listApplications"
+  | "listPermissions"
   | "updateRoleBindingStatus"
 >;
 
@@ -305,6 +311,29 @@ const createApplicationBodySchema = {
   },
 } as const;
 
+const listApplicationsBodySchema = {
+  type: "object",
+  required: ["tenant_id"],
+  additionalProperties: false,
+  properties: {
+    tenant_id: { type: "string", minLength: 1 },
+    limit: { type: "integer", minimum: 1, maximum: 500 },
+    application_ids: {
+      type: "array",
+      items: { type: "string", minLength: 1 },
+      uniqueItems: true,
+      minItems: 1,
+    },
+    slug: { type: "string", minLength: 1 },
+    statuses: {
+      type: "array",
+      items: { type: "string", enum: ["active", "suspended"] },
+      uniqueItems: true,
+      minItems: 1,
+    },
+  },
+} as const;
+
 const createGroupBodySchema = {
   type: "object",
   required: [
@@ -385,6 +414,25 @@ const createPermissionBodySchema = {
     actor_principal_id: { anyOf: [{ type: "string", minLength: 1 }, { type: "null" }] },
     actor_subject: { type: "string", minLength: 1 },
     reason: { type: "string", minLength: 1 },
+  },
+} as const;
+
+const listPermissionsBodySchema = {
+  type: "object",
+  required: ["tenant_id"],
+  additionalProperties: false,
+  properties: {
+    tenant_id: { type: "string", minLength: 1 },
+    limit: { type: "integer", minimum: 1, maximum: 500 },
+    application_id: { type: "string", minLength: 1 },
+    permission_ids: {
+      type: "array",
+      items: { type: "string", minLength: 1 },
+      uniqueItems: true,
+      minItems: 1,
+    },
+    action: { type: "string", minLength: 1 },
+    resource_type: { type: "string", minLength: 1 },
   },
 } as const;
 
@@ -509,6 +557,23 @@ const createApplicationResponseSchema = {
   "5xx": errorResponseSchema,
 } as const;
 
+const listApplicationsResponseSchema = {
+  200: {
+    type: "object",
+    additionalProperties: false,
+    required: ["generated_at", "applications"],
+    properties: {
+      generated_at: { type: "string" },
+      applications: {
+        type: "array",
+        items: applicationSchema,
+      },
+    },
+  },
+  "4xx": errorResponseSchema,
+  "5xx": errorResponseSchema,
+} as const;
+
 const createGroupResponseSchema = {
   201: {
     type: "object",
@@ -545,6 +610,23 @@ const createPermissionResponseSchema = {
     properties: {
       permission: permissionSchema,
       audit: auditSchema,
+    },
+  },
+  "4xx": errorResponseSchema,
+  "5xx": errorResponseSchema,
+} as const;
+
+const listPermissionsResponseSchema = {
+  200: {
+    type: "object",
+    additionalProperties: false,
+    required: ["generated_at", "permissions"],
+    properties: {
+      generated_at: { type: "string" },
+      permissions: {
+        type: "array",
+        items: permissionSchema,
+      },
     },
   },
   "4xx": errorResponseSchema,
@@ -639,6 +721,33 @@ export const registerControlPlaneRoutes = async (
   );
 
   app.post(
+    "/admin/applications/query",
+    {
+      schema: {
+        body: listApplicationsBodySchema,
+        response: listApplicationsResponseSchema,
+      },
+    },
+    async (request, reply) => {
+      try {
+        const response = await dependencies.controlPlane.listApplications(
+          request.body as ListApplicationsRequest,
+        );
+
+        return reply.code(200).send(response satisfies ListApplicationsResponse);
+      } catch (error) {
+        const mappedError = mapSdkApiError(error);
+
+        if (mappedError !== null) {
+          return reply.code(mappedError.statusCode).send(mappedError);
+        }
+
+        throw error;
+      }
+    },
+  );
+
+  app.post(
     "/admin/groups",
     {
       schema: {
@@ -707,6 +816,33 @@ export const registerControlPlaneRoutes = async (
         );
 
         return reply.code(201).send(response satisfies CreatePermissionResponse);
+      } catch (error) {
+        const mappedError = mapSdkApiError(error);
+
+        if (mappedError !== null) {
+          return reply.code(mappedError.statusCode).send(mappedError);
+        }
+
+        throw error;
+      }
+    },
+  );
+
+  app.post(
+    "/admin/permissions/query",
+    {
+      schema: {
+        body: listPermissionsBodySchema,
+        response: listPermissionsResponseSchema,
+      },
+    },
+    async (request, reply) => {
+      try {
+        const response = await dependencies.controlPlane.listPermissions(
+          request.body as ListPermissionsRequest,
+        );
+
+        return reply.code(200).send(response satisfies ListPermissionsResponse);
       } catch (error) {
         const mappedError = mapSdkApiError(error);
 

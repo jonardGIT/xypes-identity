@@ -63,7 +63,7 @@ Durable, cross-repo roadmap. For the operational execution playbook, see `../doc
   - Current state: the SDK now includes an onboarding seed renderer plus a checked-in starter manifest for permissions and role definitions, but it still stops short of applying control-plane mutations on behalf of a consuming app
 - Migration checklist and reference playbooks so teams can adopt the platform in hours, not days
 
-## Current Assessment [2026-05-28]
+## Current Assessment [2026-05-29]
 
 ### Strengths
 
@@ -72,24 +72,26 @@ Durable, cross-repo roadmap. For the operational execution playbook, see `../doc
 - Admin now has a stronger operator-facing shaping layer under `src/` for governance and audit visibility: access-review workbench responses plus an audit-events workbench endpoint that groups and summarizes audit evidence without bypassing the engine.
 - Engine decision-path observability improved without changing resolve-session or shared error contracts: authorize check and explain now emit explicit cache-status and cache-version attributes on the existing telemetry surface.
 - Admin now includes an operator diagnostics view for token-validation failures, authorization latency, and rollout-readiness signals, sourced from the engine telemetry snapshot instead of local policy logic.
+- The engine control plane now includes tenant-scoped query surfaces for applications, permissions, and role definitions, which closes the create-only provisioning blind spot for dependent platforms.
+- Admin now proxies those application, permission, and role-definition query surfaces under `/admin/*/query`, which gives operator and onboarding workflows a thin governance-facing read path without moving policy out of the engine.
 - The SDK now has a strong integration baseline with typed client APIs, Express and Fastify middleware, deny-aware error propagation, and copyable sample app entrypoints.
 
 ### Missing Or Partial Work
 
-- Admin remains a thin API scaffold. It now includes access-review and audit workbench shaping for operators, but the fuller governance surface is still missing: admin UI, approval workflow UX, richer audit visibility, and operator-facing policy debugging.
+- Admin remains thinner than the engine. It now includes access-review and audit workbench shaping, an operator diagnostics route, and a lightweight approval console, but a fuller governance surface is still missing: durable admin UI, richer approval workflow UX, and deeper operator-facing policy debugging.
 - Disaster recovery is documented and tabletop-complete, but not operationally complete until a live non-production restore drill is executed, recorded, and checked in with restore and replay evidence.
 - API reference publication for the core session and decision endpoints is now available from the engine boundary, but broader control-plane reference publication is still missing.
 - Phase 6 is only partially complete against its exit criteria: sample app entrypoints exist in the SDK, but there is not yet a standalone consumer reference app proving end-to-end integration.
 - Rollout mechanics remain planned rather than implemented: internal pilot posture, shadow mode, per-tenant enforcement flags, and mismatch logging are not yet evidenced in the repo.
 - Rollout readiness artifacts are now documented through the threat model, auth-failure runbook, and staging gate, but they are not yet exercised with repeatable pilot evidence.
-- The engine control plane is still mutation-heavy from a dependent-platform perspective: richer read and list surfaces for applications, permissions, and role definitions are the best next additions for retry-safe provisioning by external platforms such as xypes-docman.
+- Developer onboarding remains too manual even after the new engine read/list surfaces: there is not yet a first-class automation path for provisioning app roles or mapping new Supabase projects and tenants.
 - Operational identity-bridge hardening remains partial: webhook-driven lifecycle sync, deterministic reconciliation, and explicit identity-provider outage behavior are not yet evidenced end to end.
-- Developer onboarding remains too manual: there is not yet a first-class automation path for provisioning app roles or mapping new Supabase projects and tenants.
 - Migration and portability posture is still mostly architectural intent: exportable identity mappings, compliance-oriented data export, and a concrete IdP swap strategy are not yet represented as shipped platform capabilities.
 
 ### Misalignment To Resolve
 
 - This roadmap understates how far the engine has progressed across Phases 3 through 5.
+- This roadmap previously understated three shipped slices: admin diagnostics, SDK session wrappers, and engine query surfaces for applications, permissions, and role definitions.
 - This roadmap previously overstated two items: disaster recovery exercise completion and sample applications. The current state is documented and tabletop-complete DR plus SDK example entrypoints, not a live-drill-complete recovery posture or a full standalone reference app.
 - DR evidence must remain explicit: a documented procedure is not equivalent to a checked-in restore record with timings, replay confirmation, and corrective actions.
 - Platform-level planning metadata still lags the implementation state in places and should be refreshed as cross-repo sequencing shifts from foundational build-out to operator experience, rollout, and recovery execution.
@@ -105,7 +107,7 @@ Durable, cross-repo roadmap. For the operational execution playbook, see `../doc
 ### Recommended Next Focus
 
 - Build the missing governance surface in admin on top of the current workbench endpoints: approvals, richer audit visibility, and operator debugging.
-- Add read or list surfaces for applications, permissions, and role definitions so dependent platforms can provision authorization state recoverably instead of through blind create-only orchestration.
+- Build onboarding and provisioning automation on top of the new application, permission, and role-definition query surfaces so dependent platforms can integrate recoverably instead of through blind create-only orchestration.
 - Execute and record a live non-production disaster recovery drill.
 - Execute and record a live non-production disaster recovery drill, including restore timing, outbox replay behavior, and cache rebuild evidence.
 - Add a true reference consumer app or integration harness that proves the SDK's end-to-end path beyond example entrypoints.
@@ -130,12 +132,13 @@ Durable, cross-repo roadmap. For the operational execution playbook, see `../doc
 
 - Extend the current access-review and audit workbench responses into broader operator-facing visibility for webhook lag, reconciliation failures, token validation failures, and authorization latency.
 - Current state: admin now exposes `/admin/operations/diagnostics` for token-validation failures, authorization latency, replay visibility, and rollout-readiness shaping from engine telemetry; webhook and reconciliation visibility remains pending engine support.
-- Add governance workflows for approval activation, access-review follow-up, and outage-state visibility.
+- Current state: admin also exposes `/admin/applications/query`, `/admin/permissions/query`, and `/admin/role-definitions/query` as thin proxies over the engine-backed SDK control-plane list methods.
+- Add fuller governance workflows for approval activation, access-review follow-up, and outage-state visibility beyond the current lightweight approval console.
 - Add guided onboarding flows for mapping new applications and upstream identity projects to tenants.
 
 ### xypes-identity-sdk
 
-- Add first-class wrappers for `resolve-session` and safe forwarding of Supabase JWTs.
+- Current state: the SDK already includes typed `resolveSession` client support plus Express and Fastify session middleware for safe token forwarding; the remaining gap is stronger end-to-end reference integration rather than basic wrappers.
 - Extend the published integration guides with a stronger sample-app path that demonstrates end-to-end onboarding in a realistic consumer.
 - Automate the published onboarding and migration baseline for application-role seeding, tenant mapping, and minimum pre-enforcement validation.
 - Current state: the SDK now includes `operations.getTelemetry()` plus `npm run onboarding:seed` and a starter onboarding manifest, but it still lacks a push-button end-to-end bootstrap against live engine control-plane APIs.

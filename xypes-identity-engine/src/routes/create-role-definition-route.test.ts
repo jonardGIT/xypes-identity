@@ -7,6 +7,7 @@ import { CreateRoleDefinitionError } from "../domain/role-definition-errors.js";
 import type {
   CreateRoleDefinitionDependencies,
   CreateRoleDefinitionPersistenceInput,
+  ListRoleDefinitionsRepositoryInput,
   RoleDefinitionRepository,
   UpdateRoleDefinitionStatusPersistenceInput,
 } from "../domain/role-definition-types.js";
@@ -22,6 +23,10 @@ class RecordingRoleDefinitionRepository implements RoleDefinitionRepository {
     if (this.error !== null) {
       throw this.error;
     }
+  }
+
+  async listRoleDefinitions(_input: ListRoleDefinitionsRepositoryInput): Promise<RoleDefinitionState[]> {
+    throw new Error("unused in this test");
   }
 
   async updateRoleDefinitionStatus(

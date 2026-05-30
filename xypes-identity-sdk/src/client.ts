@@ -4,6 +4,12 @@ import type {
   ListAuditEventsResponse,
   ListAccessReviewFindingsRequest,
   ListAccessReviewFindingsResponse,
+  ListApplicationsRequest,
+  ListApplicationsResponse,
+  ListPermissionsRequest,
+  ListPermissionsResponse,
+  ListRoleDefinitionsRequest,
+  ListRoleDefinitionsResponse,
   AttachRolePermissionRequest,
   AttachRolePermissionResponse,
   AuthorizationCheckRequest,
@@ -151,6 +157,11 @@ export class XypesIdentityClient {
       options?: XypesIdentityRequestOptions,
     ): Promise<CreateApplicationResponse> =>
       this.request<CreateApplicationResponse>("POST", "/v1/applications", request, options),
+    listApplications: (
+      request: ListApplicationsRequest,
+      options?: XypesIdentityRequestOptions,
+    ): Promise<ListApplicationsResponse> =>
+      this.request<ListApplicationsResponse>("POST", "/v1/applications/query", request, options),
     createGroup: (
       request: CreateGroupRequest,
       options?: XypesIdentityRequestOptions,
@@ -166,11 +177,26 @@ export class XypesIdentityClient {
       options?: XypesIdentityRequestOptions,
     ): Promise<CreatePermissionResponse> =>
       this.request<CreatePermissionResponse>("POST", "/v1/permissions", request, options),
+    listPermissions: (
+      request: ListPermissionsRequest,
+      options?: XypesIdentityRequestOptions,
+    ): Promise<ListPermissionsResponse> =>
+      this.request<ListPermissionsResponse>("POST", "/v1/permissions/query", request, options),
     createRoleDefinition: (
       request: CreateRoleDefinitionRequest,
       options?: XypesIdentityRequestOptions,
     ): Promise<CreateRoleDefinitionResponse> =>
       this.request<CreateRoleDefinitionResponse>("POST", "/v1/role-definitions", request, options),
+    listRoleDefinitions: (
+      request: ListRoleDefinitionsRequest,
+      options?: XypesIdentityRequestOptions,
+    ): Promise<ListRoleDefinitionsResponse> =>
+      this.request<ListRoleDefinitionsResponse>(
+        "POST",
+        "/v1/role-definitions/query",
+        request,
+        options,
+      ),
     updateRoleDefinitionStatus: (
       request: UpdateRoleDefinitionStatusRequest,
       options?: XypesIdentityRequestOptions,

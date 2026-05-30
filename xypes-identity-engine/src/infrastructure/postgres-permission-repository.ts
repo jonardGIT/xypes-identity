@@ -1,8 +1,22 @@
 import { CreatePermissionError } from "../domain/permission-errors.js";
 import type {
   CreatePermissionPersistenceInput,
+  ListPermissionsRepositoryInput,
   PermissionRepository,
 } from "../domain/permission-types.js";
+
+interface PermissionRow extends Record<string, unknown> {
+  permission_id: string;
+  tenant_id: string;
+  application_id: string;
+  action: string;
+  resource_type: string;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+  updated_by: string;
+}
 
 interface QueryResult<Row extends { [key: string]: unknown }> {
   rows: Row[];
@@ -28,6 +42,19 @@ interface PostgresError {
 const PERMISSION_UNIQUE_CONSTRAINT = "permission_tenant_id_application_id_action_resource_type_key";
 const PERMISSION_APPLICATION_CONSTRAINT = "permission_tenant_id_application_id_fkey";
 
+const mapPermissionRow = (row: PermissionRow) => ({
+  permission_id: row.permission_id,
+  tenant_id: row.tenant_id,
+  application_id: row.application_id,
+  action: row.action,
+  resource_type: row.resource_type,
+  description: row.description,
+  created_at: row.created_at,
+  updated_at: row.updated_at,
+  created_by: row.created_by,
+  updated_by: row.updated_by,
+});
+
 const isPostgresError = (error: unknown): error is PostgresError => {
   if (typeof error !== "object" || error === null) {
     return false;
@@ -38,6 +65,60 @@ const isPostgresError = (error: unknown): error is PostgresError => {
 
 export class PostgresPermissionRepository implements PermissionRepository {
   constructor(private readonly databasePool: TransactionPool) {}
+
+  async listPermissions(input: ListPermissionsRepositoryInput) {
+    const client = await this.databasePool.connect();
+
+    try {
+      const values: unknown[] = [input.tenant_id];
+      const clauses = ["tenant_id = $1"];
+
+      if (input.application_id !== undefined) {
+        values.push(input.application_id);
+        clauses.push(`application_id = $${values.length}`);
+      }
+
+      if (input.permission_ids !== undefined && input.permission_ids.length > 0) {
+        values.push(input.permission_ids);
+        clauses.push(`permission_id = ANY($${values.length}::text[])`);
+      }
+
+      if (input.action !== undefined) {
+        values.push(input.action);
+        clauses.push(`action = $${values.length}`);
+      }
+
+      if (input.resource_type !== undefined) {
+        values.push(input.resource_type);
+        clauses.push(`resource_type = $${values.length}`);
+      }
+
+      values.push(input.limit ?? 100);
+
+      const result = await client.query<PermissionRow>(
+        `SELECT
+           permission_id,
+           tenant_id,
+           application_id,
+           action,
+           resource_type,
+           description,
+           created_at,
+           updated_at,
+           created_by,
+           updated_by
+         FROM permission
+         WHERE ${clauses.join(" AND ")}
+         ORDER BY created_at DESC, permission_id ASC
+         LIMIT $${values.length}`,
+        values,
+      );
+
+      return result.rows.map(mapPermissionRow);
+    } finally {
+      client.release();
+    }
+  }
 
   async createPermission(input: CreatePermissionPersistenceInput): Promise<void> {
     const client = await this.databasePool.connect();

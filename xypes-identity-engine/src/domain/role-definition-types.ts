@@ -1,5 +1,6 @@
 import type {
   CreateRoleDefinitionRequest,
+  ListRoleDefinitionsRequest,
   RoleDefinitionState,
   UpdateRoleDefinitionStatusRequest,
 } from "@xypes-identity/shared";
@@ -21,6 +22,9 @@ export interface CreateRoleDefinitionPersistenceInput {
 
 export interface RoleDefinitionRepository {
   createRoleDefinition(input: CreateRoleDefinitionPersistenceInput): Promise<void>;
+  listRoleDefinitions(
+    input: ListRoleDefinitionsRepositoryInput,
+  ): Promise<RoleDefinitionState[]>;
   updateRoleDefinitionStatus(
     input: UpdateRoleDefinitionStatusPersistenceInput,
   ): Promise<RoleDefinitionState>;
@@ -33,6 +37,15 @@ export interface CreateRoleDefinitionDependencies {
 }
 
 export interface CreateRoleDefinitionServiceInput extends CreateRoleDefinitionRequest {}
+
+export interface ListRoleDefinitionsDependencies {
+  roleDefinitionRepository: RoleDefinitionRepository;
+  clock: Clock;
+}
+
+export interface ListRoleDefinitionsRepositoryInput extends ListRoleDefinitionsRequest {}
+
+export interface ListRoleDefinitionsServiceInput extends ListRoleDefinitionsRequest {}
 
 export interface UpdateRoleDefinitionStatusPersistenceInput {
   tenant_id: string;

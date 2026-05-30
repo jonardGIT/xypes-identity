@@ -1,4 +1,8 @@
-import type { CreatePermissionRequest, PermissionState } from "@xypes-identity/shared";
+import type {
+  CreatePermissionRequest,
+  ListPermissionsRequest,
+  PermissionState,
+} from "@xypes-identity/shared";
 
 import type { Clock, DecisionIdGenerator } from "./session-types.js";
 
@@ -17,6 +21,7 @@ export interface CreatePermissionPersistenceInput {
 
 export interface PermissionRepository {
   createPermission(input: CreatePermissionPersistenceInput): Promise<void>;
+  listPermissions(input: ListPermissionsRepositoryInput): Promise<PermissionState[]>;
 }
 
 export interface CreatePermissionDependencies {
@@ -26,3 +31,12 @@ export interface CreatePermissionDependencies {
 }
 
 export interface CreatePermissionServiceInput extends CreatePermissionRequest {}
+
+export interface ListPermissionsDependencies {
+  permissionRepository: PermissionRepository;
+  clock: Clock;
+}
+
+export interface ListPermissionsRepositoryInput extends ListPermissionsRequest {}
+
+export interface ListPermissionsServiceInput extends ListPermissionsRequest {}

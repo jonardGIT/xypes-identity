@@ -6,6 +6,7 @@ import { CreatePermissionError } from "../domain/permission-errors.js";
 import type {
   CreatePermissionDependencies,
   CreatePermissionPersistenceInput,
+  ListPermissionsRepositoryInput,
   PermissionRepository,
 } from "../domain/permission-types.js";
 
@@ -20,6 +21,10 @@ class RecordingPermissionRepository implements PermissionRepository {
     if (this.error !== null) {
       throw this.error;
     }
+  }
+
+  async listPermissions(_input: ListPermissionsRepositoryInput) {
+    return [];
   }
 }
 

@@ -8,6 +8,9 @@ import {
   isXypesIdentityResolveSessionAvailabilityErrorCode,
   type ListAuditEventsResponse,
   type ListAccessReviewFindingsResponse,
+  type ListApplicationsResponse,
+  type ListPermissionsResponse,
+  type ListRoleDefinitionsResponse,
   type OperationalTelemetrySnapshot,
   type ResolveSessionResponse,
   type UpdateRoleBindingStatusResponse,
@@ -352,6 +355,152 @@ test("controlPlane.updateRoleDefinitionStatus maps a successful path-param reque
   });
   assert.equal(result.audit.audit_event_id, "audit_123");
   assert.equal(result.role_definition.status, "active");
+});
+
+test("controlPlane.listApplications maps a successful query request", async () => {
+  let capturedUrl = "";
+  let capturedInit: RequestInit | undefined;
+
+  const client = createXypesIdentityClient({
+    baseUrl: "https://engine.example.test/",
+    fetch: async (input, init) => {
+      capturedUrl = input;
+      capturedInit = init;
+
+      const response: ListApplicationsResponse = {
+        generated_at: "2026-05-29T08:00:00.000Z",
+        applications: [
+          {
+            application_id: "app_123",
+            tenant_id: "tenant_123",
+            slug: "billing",
+            display_name: "Billing",
+            status: "active",
+            created_at: "2026-05-28T00:00:00.000Z",
+            updated_at: "2026-05-28T00:00:00.000Z",
+            created_by: "operator@example.com",
+            updated_by: "operator@example.com",
+          },
+        ],
+      };
+
+      return createJsonResponse(response, 200);
+    },
+  });
+
+  const result = await client.controlPlane.listApplications({
+    tenant_id: "tenant_123",
+    statuses: ["active"],
+    limit: 25,
+  });
+
+  assert.equal(capturedUrl, "https://engine.example.test/v1/applications/query");
+  assert.equal(capturedInit?.method, "POST");
+  assert.deepEqual(JSON.parse(String(capturedInit?.body)), {
+    tenant_id: "tenant_123",
+    statuses: ["active"],
+    limit: 25,
+  });
+  assert.equal(result.applications[0]?.application_id, "app_123");
+});
+
+test("controlPlane.listPermissions maps a successful query request", async () => {
+  let capturedUrl = "";
+  let capturedInit: RequestInit | undefined;
+
+  const client = createXypesIdentityClient({
+    baseUrl: "https://engine.example.test/",
+    fetch: async (input, init) => {
+      capturedUrl = input;
+      capturedInit = init;
+
+      const response: ListPermissionsResponse = {
+        generated_at: "2026-05-29T08:00:00.000Z",
+        permissions: [
+          {
+            permission_id: "perm_123",
+            tenant_id: "tenant_123",
+            application_id: "app_123",
+            action: "invoice.read",
+            resource_type: "invoice",
+            description: null,
+            created_at: "2026-05-28T00:00:00.000Z",
+            updated_at: "2026-05-28T00:00:00.000Z",
+            created_by: "operator@example.com",
+            updated_by: "operator@example.com",
+          },
+        ],
+      };
+
+      return createJsonResponse(response, 200);
+    },
+  });
+
+  const result = await client.controlPlane.listPermissions({
+    tenant_id: "tenant_123",
+    application_id: "app_123",
+    action: "invoice.read",
+  });
+
+  assert.equal(capturedUrl, "https://engine.example.test/v1/permissions/query");
+  assert.equal(capturedInit?.method, "POST");
+  assert.deepEqual(JSON.parse(String(capturedInit?.body)), {
+    tenant_id: "tenant_123",
+    application_id: "app_123",
+    action: "invoice.read",
+  });
+  assert.equal(result.permissions[0]?.permission_id, "perm_123");
+});
+
+test("controlPlane.listRoleDefinitions maps a successful query request", async () => {
+  let capturedUrl = "";
+  let capturedInit: RequestInit | undefined;
+
+  const client = createXypesIdentityClient({
+    baseUrl: "https://engine.example.test/",
+    fetch: async (input, init) => {
+      capturedUrl = input;
+      capturedInit = init;
+
+      const response: ListRoleDefinitionsResponse = {
+        generated_at: "2026-05-29T08:00:00.000Z",
+        role_definitions: [
+          {
+            role_definition_id: "role_123",
+            tenant_id: "tenant_123",
+            application_id: "app_123",
+            name: "billing-admin",
+            description: null,
+            status: "active",
+            approval_required: true,
+            created_at: "2026-05-28T00:00:00.000Z",
+            updated_at: "2026-05-28T00:00:00.000Z",
+            created_by: "operator@example.com",
+            updated_by: "operator@example.com",
+          },
+        ],
+      };
+
+      return createJsonResponse(response, 200);
+    },
+  });
+
+  const result = await client.controlPlane.listRoleDefinitions({
+    tenant_id: "tenant_123",
+    application_id: "app_123",
+    statuses: ["active"],
+    approval_required: true,
+  });
+
+  assert.equal(capturedUrl, "https://engine.example.test/v1/role-definitions/query");
+  assert.equal(capturedInit?.method, "POST");
+  assert.deepEqual(JSON.parse(String(capturedInit?.body)), {
+    tenant_id: "tenant_123",
+    application_id: "app_123",
+    statuses: ["active"],
+    approval_required: true,
+  });
+  assert.equal(result.role_definitions[0]?.role_definition_id, "role_123");
 });
 
 test("controlPlane.updateRoleBindingStatus maps a successful path-param request", async () => {

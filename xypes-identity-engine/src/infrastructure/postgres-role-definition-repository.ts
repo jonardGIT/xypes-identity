@@ -1,6 +1,7 @@
 import { CreateRoleDefinitionError, UpdateRoleDefinitionStatusError } from "../domain/role-definition-errors.js";
 import type {
   CreateRoleDefinitionPersistenceInput,
+  ListRoleDefinitionsRepositoryInput,
   RoleDefinitionRepository,
   UpdateRoleDefinitionStatusPersistenceInput,
 } from "../domain/role-definition-types.js";
@@ -71,6 +72,61 @@ const mapRoleDefinitionRow = (row: RoleDefinitionRow) => ({
 
 export class PostgresRoleDefinitionRepository implements RoleDefinitionRepository {
   constructor(private readonly databasePool: TransactionPool) {}
+
+  async listRoleDefinitions(input: ListRoleDefinitionsRepositoryInput) {
+    const client = await this.databasePool.connect();
+
+    try {
+      const values: unknown[] = [input.tenant_id];
+      const clauses = ["tenant_id = $1"];
+
+      if (input.application_id !== undefined) {
+        values.push(input.application_id);
+        clauses.push(`application_id = $${values.length}`);
+      }
+
+      if (input.role_definition_ids !== undefined && input.role_definition_ids.length > 0) {
+        values.push(input.role_definition_ids);
+        clauses.push(`role_definition_id = ANY($${values.length}::text[])`);
+      }
+
+      if (input.statuses !== undefined && input.statuses.length > 0) {
+        values.push(input.statuses);
+        clauses.push(`status = ANY($${values.length}::text[])`);
+      }
+
+      if (input.approval_required !== undefined) {
+        values.push(input.approval_required);
+        clauses.push(`approval_required = $${values.length}`);
+      }
+
+      values.push(input.limit ?? 100);
+
+      const result = await client.query<RoleDefinitionRow>(
+        `SELECT
+           role_definition_id,
+           tenant_id,
+           application_id,
+           name,
+           description,
+           status,
+           approval_required,
+           created_at,
+           updated_at,
+           created_by,
+           updated_by
+         FROM role_definition
+         WHERE ${clauses.join(" AND ")}
+         ORDER BY created_at DESC, role_definition_id ASC
+         LIMIT $${values.length}`,
+        values,
+      );
+
+      return result.rows.map(mapRoleDefinitionRow);
+    } finally {
+      client.release();
+    }
+  }
 
   async createRoleDefinition(input: CreateRoleDefinitionPersistenceInput): Promise<void> {
     const client = await this.databasePool.connect();

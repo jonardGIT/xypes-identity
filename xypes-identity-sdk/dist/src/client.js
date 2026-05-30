@@ -33,10 +33,13 @@ export class XypesIdentityClient {
     };
     controlPlane = {
         createApplication: (request, options) => this.request("POST", "/v1/applications", request, options),
+        listApplications: (request, options) => this.request("POST", "/v1/applications/query", request, options),
         createGroup: (request, options) => this.request("POST", "/v1/groups", request, options),
         createGroupMembership: (request, options) => this.request("POST", "/v1/group-memberships", request, options),
         createPermission: (request, options) => this.request("POST", "/v1/permissions", request, options),
+        listPermissions: (request, options) => this.request("POST", "/v1/permissions/query", request, options),
         createRoleDefinition: (request, options) => this.request("POST", "/v1/role-definitions", request, options),
+        listRoleDefinitions: (request, options) => this.request("POST", "/v1/role-definitions/query", request, options),
         updateRoleDefinitionStatus: (request, options) => {
             const { role_definition_id, ...body } = request;
             return this.request("PATCH", `/v1/role-definitions/${encodeURIComponent(role_definition_id)}/status`, body, options);

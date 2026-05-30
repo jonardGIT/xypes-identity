@@ -28,3 +28,15 @@ export interface CreatePermissionResponse {
     audit: PermissionAuditReference;
 }
 export type CreatePermissionErrorCode = "PERMISSION_DUPLICATE" | "PERMISSION_APPLICATION_NOT_FOUND";
+export interface ListPermissionsRequest {
+    tenant_id: string;
+    limit?: number;
+    application_id?: string;
+    permission_ids?: string[];
+    action?: string;
+    resource_type?: string;
+}
+export interface ListPermissionsResponse {
+    generated_at: string;
+    permissions: PermissionState[];
+}

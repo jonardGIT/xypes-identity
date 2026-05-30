@@ -1,4 +1,4 @@
-import type { OperationalTelemetrySnapshot, ListAuditEventsRequest, ListAuditEventsResponse, ListAccessReviewFindingsRequest, ListAccessReviewFindingsResponse, AttachRolePermissionRequest, AttachRolePermissionResponse, AuthorizationCheckRequest, AuthorizationCheckResponse, AuthorizationExplainRequest, AuthorizationExplainResponse, CreateApplicationRequest, CreateApplicationResponse, CreateDenyPolicyRequest, CreateDenyPolicyResponse, CreateGroupMembershipRequest, CreateGroupMembershipResponse, CreateGroupRequest, CreateGroupResponse, CreatePermissionRequest, CreatePermissionResponse, CreateRoleBindingRequest, CreateRoleBindingResponse, CreateRoleDefinitionRequest, CreateRoleDefinitionResponse, ResolveSessionRequest, ResolveSessionResponse, UpdateRoleBindingStatusRequest, UpdateRoleBindingStatusResponse, UpdateRoleDefinitionStatusRequest, UpdateRoleDefinitionStatusResponse } from "@xypes-identity/shared";
+import type { OperationalTelemetrySnapshot, ListAuditEventsRequest, ListAuditEventsResponse, ListAccessReviewFindingsRequest, ListAccessReviewFindingsResponse, ListApplicationsRequest, ListApplicationsResponse, ListPermissionsRequest, ListPermissionsResponse, ListRoleDefinitionsRequest, ListRoleDefinitionsResponse, AttachRolePermissionRequest, AttachRolePermissionResponse, AuthorizationCheckRequest, AuthorizationCheckResponse, AuthorizationExplainRequest, AuthorizationExplainResponse, CreateApplicationRequest, CreateApplicationResponse, CreateDenyPolicyRequest, CreateDenyPolicyResponse, CreateGroupMembershipRequest, CreateGroupMembershipResponse, CreateGroupRequest, CreateGroupResponse, CreatePermissionRequest, CreatePermissionResponse, CreateRoleBindingRequest, CreateRoleBindingResponse, CreateRoleDefinitionRequest, CreateRoleDefinitionResponse, ResolveSessionRequest, ResolveSessionResponse, UpdateRoleBindingStatusRequest, UpdateRoleBindingStatusResponse, UpdateRoleDefinitionStatusRequest, UpdateRoleDefinitionStatusResponse } from "@xypes-identity/shared";
 type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
 export interface XypesIdentityRequestOptions {
     headers?: HeadersInit;
@@ -28,10 +28,13 @@ export declare class XypesIdentityClient {
     };
     readonly controlPlane: {
         createApplication: (request: CreateApplicationRequest, options?: XypesIdentityRequestOptions) => Promise<CreateApplicationResponse>;
+        listApplications: (request: ListApplicationsRequest, options?: XypesIdentityRequestOptions) => Promise<ListApplicationsResponse>;
         createGroup: (request: CreateGroupRequest, options?: XypesIdentityRequestOptions) => Promise<CreateGroupResponse>;
         createGroupMembership: (request: CreateGroupMembershipRequest, options?: XypesIdentityRequestOptions) => Promise<CreateGroupMembershipResponse>;
         createPermission: (request: CreatePermissionRequest, options?: XypesIdentityRequestOptions) => Promise<CreatePermissionResponse>;
+        listPermissions: (request: ListPermissionsRequest, options?: XypesIdentityRequestOptions) => Promise<ListPermissionsResponse>;
         createRoleDefinition: (request: CreateRoleDefinitionRequest, options?: XypesIdentityRequestOptions) => Promise<CreateRoleDefinitionResponse>;
+        listRoleDefinitions: (request: ListRoleDefinitionsRequest, options?: XypesIdentityRequestOptions) => Promise<ListRoleDefinitionsResponse>;
         updateRoleDefinitionStatus: (request: UpdateRoleDefinitionStatusRequest, options?: XypesIdentityRequestOptions) => Promise<UpdateRoleDefinitionStatusResponse>;
         createRoleBinding: (request: CreateRoleBindingRequest, options?: XypesIdentityRequestOptions) => Promise<CreateRoleBindingResponse>;
         updateRoleBindingStatus: (request: UpdateRoleBindingStatusRequest, options?: XypesIdentityRequestOptions) => Promise<UpdateRoleBindingStatusResponse>;

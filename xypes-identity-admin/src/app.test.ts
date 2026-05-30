@@ -19,10 +19,16 @@ import {
   type CreateRoleBindingResponse,
   type CreateRoleDefinitionRequest,
   type CreateRoleDefinitionResponse,
+  type ListApplicationsRequest,
+  type ListApplicationsResponse,
   type ListAuditEventsRequest,
   type ListAuditEventsResponse,
   type ListAccessReviewFindingsRequest,
   type ListAccessReviewFindingsResponse,
+  type ListPermissionsRequest,
+  type ListPermissionsResponse,
+  type ListRoleDefinitionsRequest,
+  type ListRoleDefinitionsResponse,
   type UpdateRoleBindingStatusRequest,
   type UpdateRoleBindingStatusResponse,
   type UpdateRoleDefinitionStatusRequest,
@@ -48,7 +54,10 @@ const createControlPlaneStub = (
   createGroup: createUnexpectedMethod("createGroup"),
   createGroupMembership: createUnexpectedMethod("createGroupMembership"),
   createPermission: createUnexpectedMethod("createPermission"),
+  listApplications: createUnexpectedMethod("listApplications"),
+  listPermissions: createUnexpectedMethod("listPermissions"),
   createRoleDefinition: createUnexpectedMethod("createRoleDefinition"),
+  listRoleDefinitions: createUnexpectedMethod("listRoleDefinitions"),
   updateRoleDefinitionStatus: createUnexpectedMethod("updateRoleDefinitionStatus"),
   createRoleBinding: createUnexpectedMethod("createRoleBinding"),
   updateRoleBindingStatus: createUnexpectedMethod("updateRoleBindingStatus"),
@@ -489,6 +498,42 @@ const listAuditEventsResponse: ListAuditEventsResponse = {
   ],
 };
 
+const listApplicationsRequest: ListApplicationsRequest = {
+  tenant_id: "tenant_123",
+  statuses: ["active"],
+  limit: 25,
+};
+
+const listApplicationsResponse: ListApplicationsResponse = {
+  generated_at: "2026-05-28T10:12:00.000Z",
+  applications: [createApplicationResponse.application],
+};
+
+const listPermissionsRequest: ListPermissionsRequest = {
+  tenant_id: "tenant_123",
+  application_id: "application_123",
+  action: "read",
+  limit: 25,
+};
+
+const listPermissionsResponse: ListPermissionsResponse = {
+  generated_at: "2026-05-28T10:13:00.000Z",
+  permissions: [createPermissionResponse.permission],
+};
+
+const listRoleDefinitionsRequest: ListRoleDefinitionsRequest = {
+  tenant_id: "tenant_123",
+  application_id: "app_123",
+  statuses: ["draft"],
+  approval_required: true,
+  limit: 25,
+};
+
+const listRoleDefinitionsResponse: ListRoleDefinitionsResponse = {
+  generated_at: "2026-05-28T10:11:00.000Z",
+  role_definitions: [createRoleDefinitionResponse.role_definition],
+};
+
 const operationalTelemetryResponse = {
   generated_at: "2026-05-28T10:30:00.000Z",
   resolve_session: {
@@ -616,6 +661,36 @@ test("PATCH /admin/role-definitions/:role_definition_id/status delegates with th
     reason: "Approval completed",
   });
   assert.deepEqual(response.json(), updateRoleDefinitionStatusResponse);
+});
+
+test("POST /admin/role-definitions/query delegates successful listing to the SDK client", async (t) => {
+  let capturedRequest: ListRoleDefinitionsRequest | undefined;
+
+  const app = await buildApp({
+    audit: createAuditStub(),
+    accessReviews: createAccessReviewStub(),
+    logger: false,
+    controlPlane: createControlPlaneStub({
+      listRoleDefinitions: async (request) => {
+        capturedRequest = request;
+        return listRoleDefinitionsResponse;
+      },
+    }),
+  });
+
+  t.after(async () => {
+    await app.close();
+  });
+
+  const response = await app.inject({
+    method: "POST",
+    url: "/admin/role-definitions/query",
+    payload: listRoleDefinitionsRequest,
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.deepEqual(capturedRequest, listRoleDefinitionsRequest);
+  assert.deepEqual(response.json(), listRoleDefinitionsResponse);
 });
 
 test("PATCH /admin/role-bindings/:role_binding_id/status delegates with the path parameter", async (t) => {
@@ -1078,6 +1153,61 @@ for (const testCase of createRouteTestCases) {
   });
 }
 
+  const queryRouteTestCases = [
+    {
+      name: "POST /admin/applications/query delegates successful listing to the SDK client",
+      methodName: "listApplications",
+      url: "/admin/applications/query",
+      payload: listApplicationsRequest,
+      responseBody: listApplicationsResponse,
+    },
+    {
+      name: "POST /admin/permissions/query delegates successful listing to the SDK client",
+      methodName: "listPermissions",
+      url: "/admin/permissions/query",
+      payload: listPermissionsRequest,
+      responseBody: listPermissionsResponse,
+    },
+  ] as const satisfies ReadonlyArray<{
+    name: string;
+    methodName: keyof AdminControlPlaneClient;
+    url: string;
+    payload: unknown;
+    responseBody: unknown;
+  }>;
+
+  for (const testCase of queryRouteTestCases) {
+    test(testCase.name, async (t) => {
+      let capturedRequest: unknown;
+
+      const app = await buildApp({
+        audit: createAuditStub(),
+        accessReviews: createAccessReviewStub(),
+        logger: false,
+        controlPlane: createControlPlaneStub({
+          [testCase.methodName]: async (request: unknown) => {
+            capturedRequest = request;
+            return testCase.responseBody;
+          },
+        }),
+      });
+
+      t.after(async () => {
+        await app.close();
+      });
+
+      const response = await app.inject({
+        method: "POST",
+        url: testCase.url,
+        payload: testCase.payload,
+      });
+
+      assert.equal(response.statusCode, 200);
+      assert.deepEqual(capturedRequest, testCase.payload);
+      assert.deepEqual(response.json(), testCase.responseBody);
+    });
+  }
+
 test("POST /admin/access-reviews/findings delegates successful listing to the SDK client", async (t) => {
   let capturedRequest: ListAccessReviewFindingsRequest | undefined;
 
@@ -1204,6 +1334,42 @@ test("SDK API errors are passed through for POST /admin/audit-events/query", asy
   assert.equal(response.statusCode, 400);
   assert.deepEqual(response.json(), {
     error: "Audit Events Error",
+    message: "Tenant id is required.",
+    statusCode: 400,
+    code: "HTTP_ERROR",
+  });
+});
+
+test("SDK API errors are passed through for POST /admin/applications/query", async (t) => {
+  const app = await buildApp({
+    audit: createAuditStub(),
+    accessReviews: createAccessReviewStub(),
+    logger: false,
+    controlPlane: createControlPlaneStub({
+      listApplications: async () => {
+        throw new XypesIdentityApiError({
+          error: "List Applications Error",
+          message: "Tenant id is required.",
+          statusCode: 400,
+          code: "HTTP_ERROR",
+        });
+      },
+    }),
+  });
+
+  t.after(async () => {
+    await app.close();
+  });
+
+  const response = await app.inject({
+    method: "POST",
+    url: "/admin/applications/query",
+    payload: listApplicationsRequest,
+  });
+
+  assert.equal(response.statusCode, 400);
+  assert.deepEqual(response.json(), {
+    error: "List Applications Error",
     message: "Tenant id is required.",
     statusCode: 400,
     code: "HTTP_ERROR",

@@ -8,7 +8,10 @@ class RecordingTransactionClient {
   readonly calls: Array<{ queryText: string; values: readonly unknown[] }> = [];
   released = false;
 
-  constructor(private readonly failure: { atCall: number; error: Error } | null = null) {}
+  constructor(
+    private readonly failure: { atCall: number; error: Error } | null = null,
+    private readonly rowsByCall: Record<number, readonly unknown[]> = {},
+  ) {}
 
   async query<Row extends { [key: string]: unknown }>(
     queryText: string,
@@ -20,7 +23,9 @@ class RecordingTransactionClient {
       throw this.failure.error;
     }
 
-    return { rows: [] };
+    const rows = this.rowsByCall[this.calls.length];
+
+    return { rows: (rows ?? []) as Row[] };
   }
 
   release(): void {
@@ -125,5 +130,51 @@ test("PostgresPermissionRepository rolls back and maps missing applications to a
   assert.equal(client.calls[0]?.queryText, "BEGIN");
   assert.match(client.calls[1]?.queryText ?? "", /INSERT INTO permission/i);
   assert.equal(client.calls[2]?.queryText, "ROLLBACK");
+  assert.equal(client.released, true);
+});
+
+test("PostgresPermissionRepository lists permissions with application-scoped filters", async () => {
+  const client = new RecordingTransactionClient(null, {
+    1: [
+      {
+        permission_id: "permission-1",
+        tenant_id: "tenant-1",
+        application_id: "application-1",
+        action: "invoice.read",
+        resource_type: "invoice",
+        description: "Read invoice records",
+        created_at: "2026-05-28T12:00:00.000Z",
+        updated_at: "2026-05-28T12:00:00.000Z",
+        created_by: "operator@example.com",
+        updated_by: "operator@example.com",
+      },
+    ],
+  });
+  const repository = new PostgresPermissionRepository(new RecordingTransactionPool(client));
+
+  const result = await repository.listPermissions({
+    tenant_id: "tenant-1",
+    application_id: "application-1",
+    action: "invoice.read",
+    limit: 25,
+  });
+
+  assert.equal(client.calls.length, 1);
+  assert.match(client.calls[0]?.queryText ?? "", /FROM permission/i);
+  assert.deepEqual(client.calls[0]?.values, ["tenant-1", "application-1", "invoice.read", 25]);
+  assert.deepEqual(result, [
+    {
+      permission_id: "permission-1",
+      tenant_id: "tenant-1",
+      application_id: "application-1",
+      action: "invoice.read",
+      resource_type: "invoice",
+      description: "Read invoice records",
+      created_at: "2026-05-28T12:00:00.000Z",
+      updated_at: "2026-05-28T12:00:00.000Z",
+      created_by: "operator@example.com",
+      updated_by: "operator@example.com",
+    },
+  ]);
   assert.equal(client.released, true);
 });

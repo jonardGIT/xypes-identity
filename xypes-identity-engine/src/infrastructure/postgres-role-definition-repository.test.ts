@@ -205,3 +205,58 @@ test("PostgresRoleDefinitionRepository rolls back when the role definition does 
   assert.equal(client.calls[2]?.queryText, "ROLLBACK");
   assert.equal(client.released, true);
 });
+
+test("PostgresRoleDefinitionRepository lists role definitions with approval filters", async () => {
+  const client = new RecordingTransactionClient(null, {
+    1: [
+      {
+        role_definition_id: "role-1",
+        tenant_id: "tenant-1",
+        application_id: "application-1",
+        name: "billing-admin",
+        description: "Can manage billing settings",
+        status: "active",
+        approval_required: true,
+        created_at: "2026-05-28T12:00:00.000Z",
+        updated_at: "2026-05-28T12:00:00.000Z",
+        created_by: "operator@example.com",
+        updated_by: "operator@example.com",
+      },
+    ],
+  });
+  const repository = new PostgresRoleDefinitionRepository(new RecordingTransactionPool(client));
+
+  const result = await repository.listRoleDefinitions({
+    tenant_id: "tenant-1",
+    application_id: "application-1",
+    statuses: ["active"],
+    approval_required: true,
+    limit: 20,
+  });
+
+  assert.equal(client.calls.length, 1);
+  assert.match(client.calls[0]?.queryText ?? "", /FROM role_definition/i);
+  assert.deepEqual(client.calls[0]?.values, [
+    "tenant-1",
+    "application-1",
+    ["active"],
+    true,
+    20,
+  ]);
+  assert.deepEqual(result, [
+    {
+      role_definition_id: "role-1",
+      tenant_id: "tenant-1",
+      application_id: "application-1",
+      name: "billing-admin",
+      description: "Can manage billing settings",
+      status: "active",
+      approval_required: true,
+      created_at: "2026-05-28T12:00:00.000Z",
+      updated_at: "2026-05-28T12:00:00.000Z",
+      created_by: "operator@example.com",
+      updated_by: "operator@example.com",
+    },
+  ]);
+  assert.equal(client.released, true);
+});

@@ -4,6 +4,7 @@ import test from "node:test";
 import type {
   ApplicationRepository,
   CreateApplicationPersistenceInput,
+  ListApplicationsRepositoryInput,
 } from "../domain/application-types.js";
 import { createApplication } from "./create-application.js";
 
@@ -12,6 +13,10 @@ class RecordingApplicationRepository implements ApplicationRepository {
 
   async createApplication(input: CreateApplicationPersistenceInput): Promise<void> {
     this.input = input;
+  }
+
+  async listApplications(_input: ListApplicationsRepositoryInput) {
+    return [];
   }
 }
 

@@ -1,6 +1,8 @@
 import type {
   CreateRoleDefinitionRequest,
   CreateRoleDefinitionResponse,
+  ListRoleDefinitionsRequest,
+  ListRoleDefinitionsResponse,
   UpdateRoleDefinitionStatusRequest,
   UpdateRoleDefinitionStatusResponse,
   XypesIdentityClient,
@@ -11,7 +13,7 @@ import { mapSdkApiError } from "../error-mapping.js";
 
 export type RoleDefinitionControlPlaneClient = Pick<
   XypesIdentityClient["controlPlane"],
-  "createRoleDefinition" | "updateRoleDefinitionStatus"
+  "createRoleDefinition" | "listRoleDefinitions" | "updateRoleDefinitionStatus"
 >;
 
 export interface RoleDefinitionRouteDependencies {
@@ -86,6 +88,30 @@ const createRoleDefinitionBodySchema = {
   },
 } as const;
 
+const listRoleDefinitionsBodySchema = {
+  type: "object",
+  required: ["tenant_id"],
+  additionalProperties: false,
+  properties: {
+    tenant_id: { type: "string", minLength: 1 },
+    limit: { type: "integer", minimum: 1, maximum: 500 },
+    application_id: { type: "string", minLength: 1 },
+    role_definition_ids: {
+      type: "array",
+      items: { type: "string", minLength: 1 },
+      uniqueItems: true,
+      minItems: 1,
+    },
+    statuses: {
+      type: "array",
+      items: { type: "string", enum: ["draft", "active", "deprecated", "retired"] },
+      uniqueItems: true,
+      minItems: 1,
+    },
+    approval_required: { type: "boolean" },
+  },
+} as const;
+
 const updateRoleDefinitionStatusParamsSchema = {
   type: "object",
   required: ["role_definition_id"],
@@ -150,10 +176,54 @@ const updateRoleDefinitionStatusResponseSchema = {
   "5xx": errorResponseSchema,
 } as const;
 
+const listRoleDefinitionsResponseSchema = {
+  200: {
+    type: "object",
+    additionalProperties: false,
+    required: ["generated_at", "role_definitions"],
+    properties: {
+      generated_at: { type: "string" },
+      role_definitions: {
+        type: "array",
+        items: roleDefinitionSchema,
+      },
+    },
+  },
+  "4xx": errorResponseSchema,
+  "5xx": errorResponseSchema,
+} as const;
+
 export const registerRoleDefinitionRoutes = async (
   app: FastifyInstance,
   dependencies: RoleDefinitionRouteDependencies,
 ): Promise<void> => {
+  app.post(
+    "/admin/role-definitions/query",
+    {
+      schema: {
+        body: listRoleDefinitionsBodySchema,
+        response: listRoleDefinitionsResponseSchema,
+      },
+    },
+    async (request, reply) => {
+      try {
+        const response = await dependencies.controlPlane.listRoleDefinitions(
+          request.body as ListRoleDefinitionsRequest,
+        );
+
+        return reply.code(200).send(response satisfies ListRoleDefinitionsResponse);
+      } catch (error) {
+        const mappedError = mapSdkApiError(error);
+
+        if (mappedError !== null) {
+          return reply.code(mappedError.statusCode).send(mappedError);
+        }
+
+        throw error;
+      }
+    },
+  );
+
   app.post(
     "/admin/role-definitions",
     {

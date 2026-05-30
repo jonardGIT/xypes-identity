@@ -3,6 +3,7 @@ import test from "node:test";
 
 import type {
   CreateRoleDefinitionPersistenceInput,
+  ListRoleDefinitionsRepositoryInput,
   RoleDefinitionRepository,
   UpdateRoleDefinitionStatusPersistenceInput,
 } from "../domain/role-definition-types.js";
@@ -13,6 +14,10 @@ class RecordingRoleDefinitionRepository implements RoleDefinitionRepository {
 
   async createRoleDefinition(_input: CreateRoleDefinitionPersistenceInput): Promise<void> {
     throw new Error("unused in this test");
+  }
+
+  async listRoleDefinitions(_input: ListRoleDefinitionsRepositoryInput) {
+    return [];
   }
 
   async updateRoleDefinitionStatus(

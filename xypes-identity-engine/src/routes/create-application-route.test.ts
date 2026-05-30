@@ -7,6 +7,7 @@ import type {
   ApplicationRepository,
   CreateApplicationDependencies,
   CreateApplicationPersistenceInput,
+  ListApplicationsRepositoryInput,
 } from "../domain/application-types.js";
 
 class RecordingApplicationRepository implements ApplicationRepository {
@@ -20,6 +21,10 @@ class RecordingApplicationRepository implements ApplicationRepository {
     if (this.error !== null) {
       throw this.error;
     }
+  }
+
+  async listApplications(_input: ListApplicationsRepositoryInput) {
+    return [];
   }
 }
 

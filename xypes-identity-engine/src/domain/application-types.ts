@@ -1,4 +1,8 @@
-import type { ApplicationState, CreateApplicationRequest } from "@xypes-identity/shared";
+import type {
+  ApplicationState,
+  CreateApplicationRequest,
+  ListApplicationsRequest,
+} from "@xypes-identity/shared";
 
 import type { Clock, DecisionIdGenerator } from "./session-types.js";
 
@@ -17,6 +21,7 @@ export interface CreateApplicationPersistenceInput {
 
 export interface ApplicationRepository {
   createApplication(input: CreateApplicationPersistenceInput): Promise<void>;
+  listApplications(input: ListApplicationsRepositoryInput): Promise<ApplicationState[]>;
 }
 
 export interface CreateApplicationDependencies {
@@ -26,3 +31,12 @@ export interface CreateApplicationDependencies {
 }
 
 export interface CreateApplicationServiceInput extends CreateApplicationRequest {}
+
+export interface ListApplicationsDependencies {
+  applicationRepository: ApplicationRepository;
+  clock: Clock;
+}
+
+export interface ListApplicationsRepositoryInput extends ListApplicationsRequest {}
+
+export interface ListApplicationsServiceInput extends ListApplicationsRequest {}

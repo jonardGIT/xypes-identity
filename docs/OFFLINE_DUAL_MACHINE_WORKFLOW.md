@@ -72,6 +72,16 @@ git remote -v
 
 That command must print nothing on the work machine.
 
+If you prefer one guided entrypoint instead of remembering each helper script, use:
+
+```bash
+bash scripts/linux/dual-machine-workflow.sh help
+```
+
+```powershell
+pwsh -File scripts/windows/dual-machine-workflow.ps1 help
+```
+
 ## Standard Transfer Loop
 
 ### 1. Export the current `main` from the main machine
@@ -174,6 +184,16 @@ Review the branch before merging:
 git diff main...import/feat/offline-transfer-sop
 ```
 
+Or use the guided wrapper:
+
+```bash
+bash scripts/linux/dual-machine-workflow.sh review-import import/feat/offline-transfer-sop
+```
+
+```powershell
+pwsh -File scripts/windows/dual-machine-workflow.ps1 review-import import/feat/offline-transfer-sop
+```
+
 Run the same narrow validation again on the main machine. If contracts or integrations changed, run the broader validation required by the workflow.
 
 ### 7. Fast-forward or merge the accepted slice on the main machine
@@ -211,17 +231,21 @@ Stop and correct the workflow if any of the following happens:
 Linux:
 
 - `bash scripts/linux/lock-offline-work-machine.sh`
+- `bash scripts/linux/dual-machine-workflow.sh <command> [args]`
 - `bash scripts/linux/export-main-bundle.sh [branch-name] [output-path]`
 - `bash scripts/linux/import-main-bundle.sh <bundle-path> [branch-name] [transfer-ref]`
 - `bash scripts/linux/export-branch-bundle.sh <branch-name> [base-branch] [output-path]`
 - `bash scripts/linux/import-branch-bundle.sh <bundle-path> <branch-name> [target-branch]`
+- `bash scripts/linux/dual-machine-workflow.sh review-import <target-branch> [base-branch]`
 
 PowerShell:
 
 - `pwsh -File scripts/windows/lock-offline-work-machine.ps1 [-RemoteName origin]`
+- `pwsh -File scripts/windows/dual-machine-workflow.ps1 <command> [args]`
 - `pwsh -File scripts/windows/export-main-bundle.ps1 [-BranchName main] [-OutputPath <path>]`
 - `pwsh -File scripts/windows/import-main-bundle.ps1 -BundlePath <path> [-BranchName main] [-TransferRef transfer/main]`
 - `pwsh -File scripts/windows/export-branch-bundle.ps1 -BranchName <name> [-BaseBranch main] [-OutputPath <path>]`
 - `pwsh -File scripts/windows/import-branch-bundle.ps1 -BundlePath <path> -BranchName <name> [-TargetBranch import/<name>]`
+- `pwsh -File scripts/windows/dual-machine-workflow.ps1 review-import <target-branch> [base-branch]`
 
 All helpers require a clean working tree before they run.

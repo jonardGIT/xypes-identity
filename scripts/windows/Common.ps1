@@ -210,6 +210,27 @@ function Assert-JsonPost {
     Write-Log "$Description passed"
 }
 
+function Assert-HttpGetContains {
+    param(
+        [Parameter(Mandatory = $true)][string]$Description,
+        [Parameter(Mandatory = $true)][string]$Url,
+        [Parameter(Mandatory = $true)][int]$ExpectedStatus,
+        [Parameter(Mandatory = $true)][string]$ExpectedSubstring
+    )
+
+    $response = Invoke-WebRequest -Uri $Url -Method Get -SkipHttpErrorCheck -TimeoutSec 20
+
+    if ($response.StatusCode -ne $ExpectedStatus) {
+        throw "$Description expected HTTP $ExpectedStatus, got $($response.StatusCode). Body: $($response.Content)"
+    }
+
+    if (-not $response.Content.Contains($ExpectedSubstring)) {
+        throw "$Description response body did not include '$ExpectedSubstring'. Body: $($response.Content)"
+    }
+
+    Write-Log "$Description passed"
+}
+
 function Invoke-ResolveSessionSmokeTests {
     $activeToken = New-LocalToken -Subject 'local-active-member' -Email 'active.member@example.test'
     $suspendedToken = New-LocalToken -Subject 'local-suspended-member' -Email 'suspended.member@example.test'
@@ -222,6 +243,10 @@ function Invoke-ResolveSessionSmokeTests {
 function Invoke-AdminSmokeTest {
     $slug = 'admin-smoke-' + [DateTimeOffset]::UtcNow.ToString('yyyyMMddHHmmssfff') + '-' + (Get-Random -Minimum 1000 -Maximum 9999)
     $payload = "{\"tenant_id\":\"$script:LocalActiveTenantId\",\"slug\":\"$slug\",\"display_name\":\"Admin Smoke $slug\",\"actor_principal_id\":\"11111111-1111-1111-1111-111111111111\",\"actor_subject\":\"local-admin@example.test\",\"reason\":\"Local automation smoke test\"}"
+    $workbenchPayload = "{\"tenant_id\":\"$script:LocalActiveTenantId\",\"stale_after_days\":30,\"limit\":25,\"finding_codes\":[\"PRIVILEGED_ROLE_BINDING\",\"STALE_ROLE_BINDING\"]}"
+
+    Assert-HttpGetContains -Description 'admin access review console smoke test' -Url "$script:AdminUrl/admin/access-reviews/console" -ExpectedStatus 200 -ExpectedSubstring "value=\"$script:LocalActiveTenantId\""
+    Assert-JsonPost -Description 'admin access review workbench smoke test' -Url "$script:AdminUrl/admin/access-reviews/workbench" -Payload $workbenchPayload -ExpectedStatus 200 -ExpectedSubstring '"summary":'
 
     Assert-JsonPost -Description 'admin create application smoke test' -Url "$script:AdminUrl/admin/applications" -Payload $payload -ExpectedStatus 201 -ExpectedSubstring '"audit_event_id":"'
 }

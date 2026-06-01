@@ -111,8 +111,9 @@ export class PostgresPrincipalRepository
       [],
     );
 
-    const anomalyResult = await this.databaseClient.query<IdentityReconciliationAnomalyRow>(
-      `WITH orphaned_principals AS (
+    const anomalyResult =
+      await this.databaseClient.query<IdentityReconciliationAnomalyRow>(
+        `WITH orphaned_principals AS (
          SELECT
            'ORPHANED_PRINCIPAL'::text AS code,
            principal.principal_id::text AS principal_id,
@@ -157,12 +158,14 @@ export class PostgresPrincipalRepository
        SELECT code, principal_id, subject, tenant_id, observed_count
        FROM suspended_principal_active_memberships
        ORDER BY code, subject NULLS LAST, principal_id NULLS LAST, tenant_id NULLS LAST`,
-      [],
-    );
+        [],
+      );
 
     return {
       principals_scanned: Number(principalCountResult.rows[0]?.total ?? 0),
-      tenant_memberships_scanned: Number(membershipCountResult.rows[0]?.total ?? 0),
+      tenant_memberships_scanned: Number(
+        membershipCountResult.rows[0]?.total ?? 0,
+      ),
       anomalies: anomalyResult.rows.map((row) => ({
         code: row.code,
         principal_id: row.principal_id,

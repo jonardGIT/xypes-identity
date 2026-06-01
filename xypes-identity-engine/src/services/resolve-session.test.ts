@@ -84,7 +84,11 @@ class StubTokenVerifier implements SessionTokenVerifier {
 }
 
 class RecordingAuditPublisher implements AuditPublisher {
-  events: Array<{ decision_id: string; tenant_id: string; principal_id: string }> = [];
+  events: Array<{
+    decision_id: string;
+    tenant_id: string;
+    principal_id: string;
+  }> = [];
 
   async publish(event: {
     decision_id: string;
@@ -96,8 +100,10 @@ class RecordingAuditPublisher implements AuditPublisher {
 }
 
 class RecordingResolveSessionLogger implements ResolveSessionLogger {
-  infoEntries: Array<{ bindings: ResolveSessionLogBindings; message: string }> = [];
-  warnEntries: Array<{ bindings: ResolveSessionLogBindings; message: string }> = [];
+  infoEntries: Array<{ bindings: ResolveSessionLogBindings; message: string }> =
+    [];
+  warnEntries: Array<{ bindings: ResolveSessionLogBindings; message: string }> =
+    [];
 
   info(bindings: ResolveSessionLogBindings, message: string) {
     this.infoEntries.push({ bindings, message });
@@ -119,7 +125,9 @@ const fixedDecisionIdGenerator: DecisionIdGenerator = {
 const buildDependencies = (
   principalRepository: PrincipalRepository,
   auditPublisher: RecordingAuditPublisher,
-  tokenVerifier: SessionTokenVerifier = new StubTokenVerifier("supabase-user-1"),
+  tokenVerifier: SessionTokenVerifier = new StubTokenVerifier(
+    "supabase-user-1",
+  ),
   sessionLogger?: ResolveSessionLogger,
   operationalTelemetry?: OperationalTelemetryRecorder,
 ): ResolveSessionDependencies => ({
@@ -202,7 +210,10 @@ test("resolveSession returns principal context and emits an audit event", async 
   ]);
   assert.deepEqual(sessionLogger.warnEntries, []);
   assert.equal(operationalTelemetry.resolveSessionInputs.length, 1);
-  assert.equal(operationalTelemetry.resolveSessionInputs[0]?.outcome, "success");
+  assert.equal(
+    operationalTelemetry.resolveSessionInputs[0]?.outcome,
+    "success",
+  );
 });
 
 test("resolveSession rejects an unknown principal", async () => {
@@ -249,8 +260,14 @@ test("resolveSession rejects an unknown principal", async () => {
     },
   ]);
   assert.equal(operationalTelemetry.resolveSessionInputs.length, 1);
-  assert.equal(operationalTelemetry.resolveSessionInputs[0]?.outcome, "failure");
-  assert.equal(operationalTelemetry.resolveSessionInputs[0]?.error_code, "AUTH_PRINCIPAL_NOT_FOUND");
+  assert.equal(
+    operationalTelemetry.resolveSessionInputs[0]?.outcome,
+    "failure",
+  );
+  assert.equal(
+    operationalTelemetry.resolveSessionInputs[0]?.error_code,
+    "AUTH_PRINCIPAL_NOT_FOUND",
+  );
 });
 
 test("resolveSession rejects a suspended principal", async () => {

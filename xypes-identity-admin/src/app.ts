@@ -1,6 +1,9 @@
 import Fastify, { type FastifyInstance } from "fastify";
 
-import { registerAuditRoutes, type AuditClient } from "./routes/audit-routes.js";
+import {
+  registerAuditRoutes,
+  type AuditClient,
+} from "./routes/audit-routes.js";
 import {
   registerAccessReviewRoutes,
   type AccessReviewClient,
@@ -22,10 +25,9 @@ import {
   type RoleDefinitionControlPlaneClient,
 } from "./routes/role-definition-routes.js";
 
-export type AdminControlPlaneClient =
-  RoleDefinitionControlPlaneClient
-  & ControlPlaneClient
-  & OnboardingControlPlaneClient;
+export type AdminControlPlaneClient = RoleDefinitionControlPlaneClient &
+  ControlPlaneClient &
+  OnboardingControlPlaneClient;
 export type AdminAccessReviewClient = AccessReviewClient;
 export type AdminAuditClient = AuditClient;
 export type AdminOperationsClient = OperationsClient;
@@ -38,7 +40,9 @@ export interface AppDependencies {
   logger?: boolean;
 }
 
-export const buildApp = async (dependencies: AppDependencies): Promise<FastifyInstance> => {
+export const buildApp = async (
+  dependencies: AppDependencies,
+): Promise<FastifyInstance> => {
   const app = Fastify({
     logger: dependencies.logger ?? true,
   });

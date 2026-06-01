@@ -72,8 +72,14 @@ test("PostgresPrincipalRepository returns null when no tenant membership exists"
 
   assert.equal(result, null);
   assert.equal(databaseClient.calls.length, 1);
-  assert.match(databaseClient.calls[0]?.queryText ?? "", /FROM tenant_membership/i);
-  assert.deepEqual(databaseClient.calls[0]?.values, ["principal-1", "tenant-1"]);
+  assert.match(
+    databaseClient.calls[0]?.queryText ?? "",
+    /FROM tenant_membership/i,
+  );
+  assert.deepEqual(databaseClient.calls[0]?.values, [
+    "principal-1",
+    "tenant-1",
+  ]);
 });
 
 test("PostgresPrincipalRepository scans identity reconciliation anomalies", async () => {

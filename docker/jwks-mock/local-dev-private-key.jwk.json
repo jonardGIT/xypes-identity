@@ -4,6 +4,6 @@
   "use": "sig",
   "kid": "local-dev-key",
   "alg": "EdDSA",
-  "x": "11qYAYKxCrfVS_7TyWQHOg7hcvPapjIlrwIaaPcHURo",
-  "d": "nWGxne_9WmC6hEr0kuwsxERJxWl7MmkZcDusAxyuf2A"
+  "x": "2QGYCNC_cr3XD1Caeiog7C4HGkS6tXsY-eXnUnrzia0",
+  "d": "MSFCl1kIgSls5KAB-Mb0j98rKCGSqo5ggV6u5F-wYMY"
 }

@@ -72,22 +72,23 @@ const unexpectedCall = (methodName: string) => () => {
 
 const createControlPlaneClient = (
   overrides: Partial<ControlPlaneClient>,
-): ControlPlaneClient => ({
-  createApplication: unexpectedCall("createApplication"),
-  listApplications: unexpectedCall("listApplications"),
-  createGroup: unexpectedCall("createGroup"),
-  createGroupMembership: unexpectedCall("createGroupMembership"),
-  createPermission: unexpectedCall("createPermission"),
-  listPermissions: unexpectedCall("listPermissions"),
-  createRoleDefinition: unexpectedCall("createRoleDefinition"),
-  listRoleDefinitions: unexpectedCall("listRoleDefinitions"),
-  updateRoleDefinitionStatus: unexpectedCall("updateRoleDefinitionStatus"),
-  createRoleBinding: unexpectedCall("createRoleBinding"),
-  updateRoleBindingStatus: unexpectedCall("updateRoleBindingStatus"),
-  attachRolePermission: unexpectedCall("attachRolePermission"),
-  createDenyPolicy: unexpectedCall("createDenyPolicy"),
-  ...overrides,
-}) as ControlPlaneClient;
+): ControlPlaneClient =>
+  ({
+    createApplication: unexpectedCall("createApplication"),
+    listApplications: unexpectedCall("listApplications"),
+    createGroup: unexpectedCall("createGroup"),
+    createGroupMembership: unexpectedCall("createGroupMembership"),
+    createPermission: unexpectedCall("createPermission"),
+    listPermissions: unexpectedCall("listPermissions"),
+    createRoleDefinition: unexpectedCall("createRoleDefinition"),
+    listRoleDefinitions: unexpectedCall("listRoleDefinitions"),
+    updateRoleDefinitionStatus: unexpectedCall("updateRoleDefinitionStatus"),
+    createRoleBinding: unexpectedCall("createRoleBinding"),
+    updateRoleBindingStatus: unexpectedCall("updateRoleBindingStatus"),
+    attachRolePermission: unexpectedCall("attachRolePermission"),
+    createDenyPolicy: unexpectedCall("createDenyPolicy"),
+    ...overrides,
+  }) as ControlPlaneClient;
 
 test("applyOnboardingManifest creates missing control-plane state and activates new role definitions", async () => {
   const calls: string[] = [];
@@ -174,7 +175,9 @@ test("applyOnboardingManifest creates missing control-plane state and activates 
       };
     },
     updateRoleDefinitionStatus: async (request) => {
-      calls.push(`updateRoleDefinitionStatus:${request.role_definition_id}:${request.status}`);
+      calls.push(
+        `updateRoleDefinitionStatus:${request.role_definition_id}:${request.status}`,
+      );
       return {
         role_definition: {
           role_definition_id: request.role_definition_id,
@@ -195,7 +198,9 @@ test("applyOnboardingManifest creates missing control-plane state and activates 
       };
     },
     attachRolePermission: async (request) => {
-      calls.push(`attachRolePermission:${request.role_definition_id}:${request.permission_id}`);
+      calls.push(
+        `attachRolePermission:${request.role_definition_id}:${request.permission_id}`,
+      );
       return {
         role_permission: {
           role_permission_id: `${request.role_definition_id}:${request.permission_id}`,
@@ -222,10 +227,25 @@ test("applyOnboardingManifest creates missing control-plane state and activates 
   });
 
   assert.equal(result.application.action, "created");
-  assert.equal(result.permissions.filter((entry) => entry.action === "created").length, 3);
-  assert.equal(result.role_definitions.filter((entry) => entry.action === "created").length, 2);
-  assert.equal(result.role_definitions.filter((entry) => entry.status_action === "updated").length, 2);
-  assert.equal(result.role_permissions.filter((entry) => entry.action === "attached").length, 4);
+  assert.equal(
+    result.permissions.filter((entry) => entry.action === "created").length,
+    3,
+  );
+  assert.equal(
+    result.role_definitions.filter((entry) => entry.action === "created")
+      .length,
+    2,
+  );
+  assert.equal(
+    result.role_definitions.filter((entry) => entry.status_action === "updated")
+      .length,
+    2,
+  );
+  assert.equal(
+    result.role_permissions.filter((entry) => entry.action === "attached")
+      .length,
+    4,
+  );
   assert.equal(result.warnings.length, 1);
   assert.deepEqual(calls, [
     "listApplications",
@@ -284,9 +304,18 @@ test("applyOnboardingManifest supports dry-run planning without mutations", asyn
 
   assert.equal(result.dry_run, true);
   assert.equal(result.application.action, "planned");
-  assert.equal(result.permissions.every((entry) => entry.action === "planned"), true);
-  assert.equal(result.role_definitions.every((entry) => entry.action === "planned"), true);
-  assert.equal(result.role_permissions.every((entry) => entry.action === "planned"), true);
+  assert.equal(
+    result.permissions.every((entry) => entry.action === "planned"),
+    true,
+  );
+  assert.equal(
+    result.role_definitions.every((entry) => entry.action === "planned"),
+    true,
+  );
+  assert.equal(
+    result.role_permissions.every((entry) => entry.action === "planned"),
+    true,
+  );
   assert.equal(mutationCallCount, 0);
 });
 
@@ -376,10 +405,22 @@ test("applyOnboardingManifest reuses existing state and treats duplicate role-pe
   });
 
   assert.equal(result.application.action, "existing");
-  assert.equal(result.permissions.every((entry) => entry.action === "existing"), true);
-  assert.equal(result.role_definitions.every((entry) => entry.action === "existing"), true);
-  assert.equal(result.role_definitions.every((entry) => entry.status_action === "updated"), true);
-  assert.equal(result.role_permissions.every((entry) => entry.action === "existing"), true);
+  assert.equal(
+    result.permissions.every((entry) => entry.action === "existing"),
+    true,
+  );
+  assert.equal(
+    result.role_definitions.every((entry) => entry.action === "existing"),
+    true,
+  );
+  assert.equal(
+    result.role_definitions.every((entry) => entry.status_action === "updated"),
+    true,
+  );
+  assert.equal(
+    result.role_permissions.every((entry) => entry.action === "existing"),
+    true,
+  );
 });
 
 test("applyOnboardingManifest rejects incompatible immutable state", async () => {

@@ -1894,7 +1894,8 @@ test("POST /admin/onboarding/preview maps manifest validation failures to determ
   assert.equal(response.statusCode, 400);
   assert.deepEqual(response.json(), {
     error: "Onboarding Manifest Error",
-    message: "Role definition 'billing-operator' references unknown permission ref 'missing-ref'.",
+    message:
+      "Role definition 'billing-operator' references unknown permission ref 'missing-ref'.",
     statusCode: 400,
     code: "ADMIN_ONBOARDING_MANIFEST_INVALID",
   });

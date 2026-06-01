@@ -206,6 +206,33 @@ assert_json_post() {
   log "${description} passed"
 }
 
+assert_http_get_contains() {
+  local description="$1"
+  local url="$2"
+  local expected_status="$3"
+  local expected_substring="$4"
+  local body_file
+  local status_code
+  local body
+
+  require_command curl
+  body_file="$(mktemp)"
+
+  status_code="$(curl -sS -o "${body_file}" -w '%{http_code}' "${url}" || true)"
+  body="$(cat "${body_file}")"
+  rm -f "${body_file}"
+
+  if [[ "${status_code}" != "${expected_status}" ]]; then
+    fail "${description} expected HTTP ${expected_status}, got ${status_code}. Body: ${body}"
+  fi
+
+  if [[ "${body}" != *"${expected_substring}"* ]]; then
+    fail "${description} response body did not include '${expected_substring}'. Body: ${body}"
+  fi
+
+  log "${description} passed"
+}
+
 run_resolve_session_smoke_tests() {
   local active_token
   local suspended_token
@@ -238,9 +265,24 @@ run_resolve_session_smoke_tests() {
 run_admin_smoke_test() {
   local slug
   local payload
+  local workbench_payload
 
   slug="admin-smoke-$(date +%Y%m%d%H%M%S)-${RANDOM}"
   payload="{\"tenant_id\":\"${LOCAL_ACTIVE_TENANT_ID}\",\"slug\":\"${slug}\",\"display_name\":\"Admin Smoke ${slug}\",\"actor_principal_id\":\"11111111-1111-1111-1111-111111111111\",\"actor_subject\":\"local-admin@example.test\",\"reason\":\"Local automation smoke test\"}"
+  workbench_payload="{\"tenant_id\":\"${LOCAL_ACTIVE_TENANT_ID}\",\"stale_after_days\":30,\"limit\":25,\"finding_codes\":[\"PRIVILEGED_ROLE_BINDING\",\"STALE_ROLE_BINDING\"]}"
+
+  assert_http_get_contains \
+    'admin access review console smoke test' \
+    "${ADMIN_URL}/admin/access-reviews/console" \
+    '200' \
+    "value=\"${LOCAL_ACTIVE_TENANT_ID}\""
+
+  assert_json_post \
+    'admin access review workbench smoke test' \
+    "${ADMIN_URL}/admin/access-reviews/workbench" \
+    "${workbench_payload}" \
+    '200' \
+    '"summary":'
 
   assert_json_post \
     'admin create application smoke test' \

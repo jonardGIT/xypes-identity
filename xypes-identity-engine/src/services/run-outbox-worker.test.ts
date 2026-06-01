@@ -5,13 +5,21 @@ import type { OperationalTelemetryRecorder } from "../domain/operational-telemet
 import { runOutboxWorkerLoop } from "./run-outbox-worker.js";
 
 class RecordingOperationalTelemetry implements OperationalTelemetryRecorder {
-  replayInputs: Array<{ claimed_count: number; published_count: number; failed_count: number }> = [];
+  replayInputs: Array<{
+    claimed_count: number;
+    published_count: number;
+    failed_count: number;
+  }> = [];
 
   async recordResolveSession() {}
 
   async recordAuthorization() {}
 
-  async recordReplayBatch(input: { claimed_count: number; published_count: number; failed_count: number }) {
+  async recordReplayBatch(input: {
+    claimed_count: number;
+    published_count: number;
+    failed_count: number;
+  }) {
     this.replayInputs.push(input);
   }
 
@@ -122,7 +130,12 @@ test("runOutboxWorkerLoop logs batch failures and keeps polling", async () => {
 
 test("runOutboxWorkerLoop logs outbox batch duration when work is processed", async () => {
   const abortController = new AbortController();
-  const loggedInfos: Array<{ claimed: number; published: number; failed: number; durationMs: number }> = [];
+  const loggedInfos: Array<{
+    claimed: number;
+    published: number;
+    failed: number;
+    durationMs: number;
+  }> = [];
 
   await runOutboxWorkerLoop(
     {

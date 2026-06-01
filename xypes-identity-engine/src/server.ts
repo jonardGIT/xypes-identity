@@ -73,7 +73,8 @@ const auditLogSink = {
 };
 
 const auditPublisher = new LoggerAuditPublisher(auditLogSink);
-const authorizationTelemetry = await createOpenTelemetryAuthorizationTelemetry();
+const authorizationTelemetry =
+  await createOpenTelemetryAuthorizationTelemetry();
 
 const decisionIdGenerator = createDecisionIdGenerator();
 const clock = createClock();
@@ -87,7 +88,9 @@ const authorizationCache: AuthorizationCacheDependencies = {
     redisClient,
     config.expansion_cache_ttl_seconds,
   ),
-  authorizationCacheVersionStore: new RedisAuthorizationCacheVersionStore(redisClient),
+  authorizationCacheVersionStore: new RedisAuthorizationCacheVersionStore(
+    redisClient,
+  ),
 };
 
 const operationalTelemetry = new RedisOperationalTelemetryStore(redisClient);
@@ -173,11 +176,12 @@ const roleBindingCreateDependencies: CreateRoleBindingDependencies = {
   clock: dependencies.clock,
 };
 
-const roleBindingStatusUpdateDependencies: UpdateRoleBindingStatusDependencies = {
-  roleBindingRepository,
-  idGenerator: dependencies.decisionIdGenerator,
-  clock: dependencies.clock,
-};
+const roleBindingStatusUpdateDependencies: UpdateRoleBindingStatusDependencies =
+  {
+    roleBindingRepository,
+    idGenerator: dependencies.decisionIdGenerator,
+    clock: dependencies.clock,
+  };
 
 const roleDefinitionCreateDependencies: CreateRoleDefinitionDependencies = {
   roleDefinitionRepository,
@@ -190,11 +194,12 @@ const roleDefinitionReadDependencies: ListRoleDefinitionsDependencies = {
   clock: dependencies.clock,
 };
 
-const roleDefinitionStatusUpdateDependencies: UpdateRoleDefinitionStatusDependencies = {
-  roleDefinitionRepository,
-  idGenerator: dependencies.decisionIdGenerator,
-  clock: dependencies.clock,
-};
+const roleDefinitionStatusUpdateDependencies: UpdateRoleDefinitionStatusDependencies =
+  {
+    roleDefinitionRepository,
+    idGenerator: dependencies.decisionIdGenerator,
+    clock: dependencies.clock,
+  };
 
 const rolePermissionAttachDependencies: AttachRolePermissionDependencies = {
   rolePermissionRepository,
@@ -235,10 +240,7 @@ const app = await buildApp({
 });
 
 app.addHook("onClose", async () => {
-  await Promise.all([
-    redisClient.quit(),
-    pool.end(),
-  ]);
+  await Promise.all([redisClient.quit(), pool.end()]);
 });
 
 auditLogSink.info = app.log.info.bind(app.log);

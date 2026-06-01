@@ -48,7 +48,10 @@ const responseSchema = {
           anomalies_detected: { type: "integer", minimum: 0 },
           orphaned_principals: { type: "integer", minimum: 0 },
           duplicate_subject_mappings: { type: "integer", minimum: 0 },
-          suspended_principal_active_memberships: { type: "integer", minimum: 0 },
+          suspended_principal_active_memberships: {
+            type: "integer",
+            minimum: 0,
+          },
         },
       },
       anomalies: {

@@ -47,9 +47,9 @@ const parseArgs = (argv: string[]): ParsedArgs => {
   }
 
   if (
-    parsed.baseUrl === undefined
-    || parsed.manifestPath === undefined
-    || parsed.actorSubject === undefined
+    parsed.baseUrl === undefined ||
+    parsed.manifestPath === undefined ||
+    parsed.actorSubject === undefined
   ) {
     throw new Error(
       "Usage: npm run onboarding:apply -- --base-url <url> --manifest <file> --actor-subject <subject> [--actor-principal-id <principal>] [--reason <reason>] [--dry-run]",
@@ -59,7 +59,9 @@ const parseArgs = (argv: string[]): ParsedArgs => {
   return parsed as ParsedArgs;
 };
 
-const loadManifest = async (manifestPath: string): Promise<XypesIdentityOnboardingManifest> => {
+const loadManifest = async (
+  manifestPath: string,
+): Promise<XypesIdentityOnboardingManifest> => {
   const resolvedPath = path.resolve(process.cwd(), manifestPath);
   const contents = await readFile(resolvedPath, "utf8");
 

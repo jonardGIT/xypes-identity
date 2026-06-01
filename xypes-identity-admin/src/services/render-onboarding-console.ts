@@ -135,6 +135,42 @@ export const renderOnboardingConsole = (): string => `<!doctype html>
 
       .status { min-height: 20px; color: var(--muted); font-size: 0.82rem; }
 
+      .status.warn { color: var(--warn); }
+
+      .guardrail {
+        border: 1px solid rgba(140, 90, 29, 0.2);
+        border-radius: 18px;
+        background: rgba(191, 122, 41, 0.08);
+        padding: 14px;
+      }
+
+      .guardrail p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.5;
+        font-size: 0.84rem;
+      }
+
+      .checklist {
+        display: grid;
+        gap: 10px;
+      }
+
+      .checklist label {
+        grid-template-columns: auto 1fr;
+        align-items: start;
+        text-transform: none;
+        letter-spacing: 0;
+        font-size: 0.82rem;
+      }
+
+      .checklist input {
+        width: 16px;
+        height: 16px;
+        margin-top: 2px;
+        padding: 0;
+      }
+
       .summary-card,
       .artifact,
       .step-list,
@@ -207,9 +243,16 @@ export const renderOnboardingConsole = (): string => `<!doctype html>
                 <label>Tenant Resolution Detail<input id="tenant-resolution-detail" value="Resolve tenant_id from /tenants/tenant_123/... request routes." required /></label>
               </div>
               <label>Tenant Membership Bootstrap<textarea id="tenant-membership-bootstrap" required>Grant tenant membership manually before enabling enforcement.</textarea></label>
+              <div class="guardrail">
+                <div class="eyebrow">Apply Guardrails</div>
+                <div class="checklist">
+                  <label><input id="confirm-preview-reviewed" type="checkbox" />I reviewed the generated manifest preview and the captured Supabase and tenant-routing mapping.</label>
+                  <label><input id="confirm-manual-steps-reviewed" type="checkbox" />I reviewed the manual follow-up steps and will not enable enforcement until non-production validation passes.</label>
+                </div>
+              </div>
               <div class="split">
                 <button id="preview-manifest" type="button">Preview onboarding plan</button>
-                <button id="apply-manifest" class="secondary" type="button">Apply onboarding manifest</button>
+                <button id="apply-manifest" class="secondary" type="button" disabled>Apply onboarding manifest</button>
               </div>
             </form>
             <div id="onboarding-status" class="status"></div>
@@ -224,6 +267,7 @@ export const renderOnboardingConsole = (): string => `<!doctype html>
         <div class="stack">
           <section class="panel">
             <div class="eyebrow">Plan Summary</div>
+            <div id="preview-rail" class="artifact">Run a preview to unlock apply. Any manifest change requires a fresh preview review.</div>
             <div id="summary-grid" class="summary-grid"></div>
             <div id="manual-steps" class="empty">Manual mapping steps will appear after preview.</div>
           </section>
@@ -253,18 +297,24 @@ export const renderOnboardingConsole = (): string => `<!doctype html>
 
     <script>
       const state = {
+        busy: false,
         latestManifest: null,
         latestResult: null,
+        latestPreviewSignature: null,
+        latestPreviewAt: null,
       };
 
+      const onboardingForm = document.getElementById('onboarding-form');
       const summaryRoot = document.getElementById('summary-grid');
       const mappingSummaryRoot = document.getElementById('mapping-summary');
       const manualStepsRoot = document.getElementById('manual-steps');
       const manifestOutput = document.getElementById('manifest-output');
+      const previewRailRoot = document.getElementById('preview-rail');
       const resultOutput = document.getElementById('result-output');
       const statusRoot = document.getElementById('onboarding-status');
       const previewButton = document.getElementById('preview-manifest');
       const applyButton = document.getElementById('apply-manifest');
+      const confirmationIds = ['confirm-preview-reviewed', 'confirm-manual-steps-reviewed'];
 
       const permissionSeeds = (slug, displayName) => ([
         {
@@ -335,6 +385,41 @@ export const renderOnboardingConsole = (): string => `<!doctype html>
         };
       };
 
+      const escapeHtml = (value) => String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+
+      const serializeManifest = (manifest) => JSON.stringify(manifest);
+
+      const allConfirmationsChecked = () => confirmationIds.every((id) => document.getElementById(id).checked);
+
+      const currentPreviewMatchesForm = () => {
+        if (state.latestPreviewSignature === null) {
+          return false;
+        }
+
+        return state.latestPreviewSignature === serializeManifest(buildManifest());
+      };
+
+      const setStatus = (message, tone) => {
+        statusRoot.textContent = message;
+        statusRoot.className = tone === 'warn' ? 'status warn' : 'status';
+      };
+
+      const renderPreviewRail = () => {
+        const previewReady = currentPreviewMatchesForm();
+        const confirmationsReady = allConfirmationsChecked();
+        const reviewedAt = state.latestPreviewAt === null ? 'not yet captured' : new Date(state.latestPreviewAt).toLocaleString();
+        const stateLabel = previewReady
+          ? (confirmationsReady ? 'Apply unlocked' : 'Preview reviewed, waiting for confirmations')
+          : 'Preview required';
+
+        previewRailRoot.innerHTML = '<strong>' + escapeHtml(stateLabel) + '</strong><div class="pill-row"><span class="pill">preview reviewed ' + escapeHtml(reviewedAt) + '</span><span class="pill">manifest ' + escapeHtml(previewReady ? 'in sync with preview' : 'changed since preview') + '</span><span class="pill">confirmations ' + escapeHtml(confirmationsReady ? 'complete' : 'pending') + '</span></div><p>' + escapeHtml(previewReady ? 'Apply is only enabled while the current form exactly matches the reviewed preview.' : 'Rerun preview after any edit so the operator reviews the exact manifest that will be applied.') + '</p>';
+      };
+
       const renderSummary = (result) => {
         const cards = [
           [result.permissions.filter((entry) => entry.action === 'created').length, 'permissions created'],
@@ -349,20 +434,66 @@ export const renderOnboardingConsole = (): string => `<!doctype html>
 
       const renderMappingSummary = (manifest, result) => {
         const mapping = manifest.identity_bridge_mapping;
-        mappingSummaryRoot.innerHTML = '<div class="artifact"><strong>' + mapping.supabase_project_ref + '</strong><div class="pill-row"><span class="pill">issuer ' + mapping.expected_jwt_issuer + '</span><span class="pill">audience ' + mapping.expected_jwt_audience + '</span><span class="pill">tenant rule ' + mapping.tenant_resolution_rule + '</span></div><p>' + mapping.tenant_resolution_detail + '</p><p>' + mapping.tenant_membership_bootstrap + '</p></div>';
-        manualStepsRoot.innerHTML = '<ol class="step-list">' + result.identity_bridge_mapping.manual_steps.map((step) => '<li>' + step + '</li>').join('') + '</ol>';
+        mappingSummaryRoot.innerHTML = '<div class="artifact"><strong>' + escapeHtml(mapping.supabase_project_ref) + '</strong><div class="pill-row"><span class="pill">issuer ' + escapeHtml(mapping.expected_jwt_issuer) + '</span><span class="pill">audience ' + escapeHtml(mapping.expected_jwt_audience) + '</span><span class="pill">tenant rule ' + escapeHtml(mapping.tenant_resolution_rule) + '</span></div><p>' + escapeHtml(mapping.tenant_resolution_detail) + '</p><p>' + escapeHtml(mapping.tenant_membership_bootstrap) + '</p></div>';
+        manualStepsRoot.innerHTML = '<ol class="step-list">' + result.identity_bridge_mapping.manual_steps.map((step) => '<li>' + escapeHtml(step) + '</li>').join('') + '</ol>';
       };
 
       const setBusy = (busy) => {
+        state.busy = busy;
         previewButton.disabled = busy;
-        applyButton.disabled = busy;
+        updateApplyState();
+      };
+
+      const updateApplyState = () => {
+        const previewReady = currentPreviewMatchesForm();
+        applyButton.disabled = state.busy || !previewReady || !allConfirmationsChecked();
+        renderPreviewRail();
+      };
+
+      const resetConfirmations = () => {
+        confirmationIds.forEach((id) => {
+          document.getElementById(id).checked = false;
+        });
+      };
+
+      const markPreviewStaleIfNeeded = () => {
+        if (state.latestPreviewSignature === null) {
+          updateApplyState();
+          return;
+        }
+
+        if (currentPreviewMatchesForm()) {
+          updateApplyState();
+          return;
+        }
+
+        state.latestPreviewSignature = null;
+        state.latestPreviewAt = null;
+        setStatus('Manifest inputs changed after preview. Run preview again before apply.', 'warn');
+        updateApplyState();
       };
 
       const submitManifest = async (dryRun) => {
         const manifest = buildManifest();
+        const manifestSignature = serializeManifest(manifest);
+
+        if (!dryRun) {
+          if (state.latestPreviewSignature !== manifestSignature) {
+            setStatus('Run preview on the current manifest before apply.', 'warn');
+            updateApplyState();
+            return;
+          }
+
+          if (!allConfirmationsChecked()) {
+            setStatus('Complete both apply guardrails before applying the manifest.', 'warn');
+            updateApplyState();
+            return;
+          }
+        }
+
         state.latestManifest = manifest;
         manifestOutput.textContent = JSON.stringify(manifest, null, 2);
-        statusRoot.textContent = dryRun ? 'Previewing onboarding manifest...' : 'Applying onboarding manifest...';
+        setStatus(dryRun ? 'Previewing onboarding manifest...' : 'Applying onboarding manifest...');
         setBusy(true);
 
         try {
@@ -386,16 +517,33 @@ export const renderOnboardingConsole = (): string => `<!doctype html>
           }
 
           state.latestResult = payload;
+          if (dryRun) {
+            state.latestPreviewSignature = manifestSignature;
+            state.latestPreviewAt = new Date().toISOString();
+            resetConfirmations();
+          } else {
+            state.latestPreviewSignature = null;
+            state.latestPreviewAt = null;
+            resetConfirmations();
+          }
           renderSummary(payload);
           renderMappingSummary(manifest, payload);
           resultOutput.textContent = JSON.stringify(payload, null, 2);
-          statusRoot.textContent = dryRun ? 'Preview ready. Review mapping and planned provisioning before apply.' : 'Onboarding manifest applied. Review the mapping follow-up steps before enabling enforcement.';
+          setStatus(dryRun ? 'Preview ready. Review mapping, manual steps, and apply guardrails before apply.' : 'Onboarding manifest applied. Run a fresh preview before any follow-up apply and finish the manual mapping steps before enabling enforcement.');
         } catch (error) {
-          statusRoot.textContent = error instanceof Error ? error.message : 'Admin onboarding request failed.';
+          setStatus(error instanceof Error ? error.message : 'Admin onboarding request failed.', 'warn');
         } finally {
           setBusy(false);
         }
       };
+
+      onboardingForm.addEventListener('input', () => {
+        markPreviewStaleIfNeeded();
+      });
+
+      onboardingForm.addEventListener('change', () => {
+        updateApplyState();
+      });
 
       previewButton.addEventListener('click', () => {
         void submitManifest(true);
@@ -404,6 +552,8 @@ export const renderOnboardingConsole = (): string => `<!doctype html>
       applyButton.addEventListener('click', () => {
         void submitManifest(false);
       });
+
+      updateApplyState();
     </script>
   </body>
 </html>`;

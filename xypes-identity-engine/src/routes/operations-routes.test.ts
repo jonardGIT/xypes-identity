@@ -120,7 +120,8 @@ test("POST /v1/operations/identity-reconciliation/run returns the reconciliation
     },
     operationalTelemetry: new StaticOperationalTelemetry(),
     identityReconciliation: {
-      identityReconciliationRepository: new StaticIdentityReconciliationRepository(),
+      identityReconciliationRepository:
+        new StaticIdentityReconciliationRepository(),
       clock: {
         now: () => new Date("2026-05-29T00:05:00.000Z"),
       },

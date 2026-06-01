@@ -113,7 +113,13 @@ const manifestSchema = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["name", "description", "approval_required", "status", "permission_refs"],
+        required: [
+          "name",
+          "description",
+          "approval_required",
+          "status",
+          "permission_refs",
+        ],
         properties: {
           name: { type: "string", minLength: 1 },
           description: { anyOf: [{ type: "string" }, { type: "null" }] },
@@ -147,7 +153,9 @@ const onboardingRequestSchema = {
   properties: {
     manifest: manifestSchema,
     actor_subject: { type: "string", minLength: 1 },
-    actor_principal_id: { anyOf: [{ type: "string", minLength: 1 }, { type: "null" }] },
+    actor_principal_id: {
+      anyOf: [{ type: "string", minLength: 1 }, { type: "null" }],
+    },
     reason: { anyOf: [{ type: "string", minLength: 1 }, { type: "null" }] },
   },
 } as const;
@@ -274,7 +282,9 @@ const onboardingResponseSchema = {
         properties: {
           action: { type: "string", enum: ["existing", "created", "planned"] },
           application: { anyOf: [applicationSchema, { type: "null" }] },
-          manifest_application_id: { anyOf: [{ type: "string" }, { type: "null" }] },
+          manifest_application_id: {
+            anyOf: [{ type: "string" }, { type: "null" }],
+          },
         },
       },
       permissions: {
@@ -285,7 +295,10 @@ const onboardingResponseSchema = {
           required: ["ref", "action", "permission"],
           properties: {
             ref: { type: "string" },
-            action: { type: "string", enum: ["existing", "created", "planned"] },
+            action: {
+              type: "string",
+              enum: ["existing", "created", "planned"],
+            },
             permission: { anyOf: [permissionSchema, { type: "null" }] },
           },
         },
@@ -305,10 +318,18 @@ const onboardingResponseSchema = {
           ],
           properties: {
             name: { type: "string" },
-            action: { type: "string", enum: ["existing", "created", "planned"] },
-            status_action: { type: "string", enum: ["unchanged", "updated", "planned"] },
+            action: {
+              type: "string",
+              enum: ["existing", "created", "planned"],
+            },
+            status_action: {
+              type: "string",
+              enum: ["unchanged", "updated", "planned"],
+            },
             desired_status: roleDefinitionStatusSchema,
-            role_definition: { anyOf: [roleDefinitionSchema, { type: "null" }] },
+            role_definition: {
+              anyOf: [roleDefinitionSchema, { type: "null" }],
+            },
             audit_event_id: { anyOf: [{ type: "string" }, { type: "null" }] },
           },
         },
@@ -318,11 +339,19 @@ const onboardingResponseSchema = {
         items: {
           type: "object",
           additionalProperties: false,
-          required: ["role_definition_name", "permission_ref", "action", "audit_event_id"],
+          required: [
+            "role_definition_name",
+            "permission_ref",
+            "action",
+            "audit_event_id",
+          ],
           properties: {
             role_definition_name: { type: "string" },
             permission_ref: { type: "string" },
-            action: { type: "string", enum: ["existing", "attached", "planned"] },
+            action: {
+              type: "string",
+              enum: ["existing", "attached", "planned"],
+            },
             audit_event_id: { anyOf: [{ type: "string" }, { type: "null" }] },
           },
         },
@@ -371,15 +400,17 @@ export const registerOnboardingRoutes = async (
   app: FastifyInstance,
   dependencies: OnboardingRouteDependencies,
 ): Promise<void> => {
-  app.get(
-    "/admin/onboarding/console",
-    async (_request, reply) => reply
+  app.get("/admin/onboarding/console", async (_request, reply) =>
+    reply
       .code(200)
       .type("text/html; charset=utf-8")
       .send(renderOnboardingConsole()),
   );
 
-  for (const [url, dry_run] of [["/admin/onboarding/preview", true], ["/admin/onboarding/apply", false]] as const) {
+  for (const [url, dry_run] of [
+    ["/admin/onboarding/preview", true],
+    ["/admin/onboarding/apply", false],
+  ] as const) {
     app.post(
       url,
       {
@@ -406,7 +437,9 @@ export const registerOnboardingRoutes = async (
             dry_run,
           );
 
-          return reply.code(200).send(response satisfies ApplyOnboardingManifestResult);
+          return reply
+            .code(200)
+            .send(response satisfies ApplyOnboardingManifestResult);
         } catch (error) {
           const onboardingError = mapOnboardingError(error);
 

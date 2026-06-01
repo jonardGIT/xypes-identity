@@ -1,7 +1,11 @@
 import type { OperationalTelemetrySnapshot } from "@xypes-identity/shared";
 
 export type AuthorizationOperation = "authorize.check" | "authorize.explain";
-export type AuthorizationCacheStatus = "hit" | "miss" | "disabled" | "not_evaluated";
+export type AuthorizationCacheStatus =
+  | "hit"
+  | "miss"
+  | "disabled"
+  | "not_evaluated";
 
 export interface ResolveSessionTelemetryInput {
   duration_ms: number;
@@ -36,6 +40,8 @@ export interface OperationalTelemetryRecorder {
   recordResolveSession(input: ResolveSessionTelemetryInput): Promise<void>;
   recordAuthorization(input: AuthorizationTelemetryInput): Promise<void>;
   recordReplayBatch(input: ReplayTelemetryInput): Promise<void>;
-  recordIdentityReconciliation(input: IdentityReconciliationTelemetryInput): Promise<void>;
+  recordIdentityReconciliation(
+    input: IdentityReconciliationTelemetryInput,
+  ): Promise<void>;
   getSnapshot(generatedAt: string): Promise<OperationalTelemetrySnapshot>;
 }

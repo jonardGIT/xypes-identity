@@ -35,6 +35,18 @@ The documented Express and Fastify startup shapes are also mirrored by executabl
 
 If you already have an Express or Fastify app, the xypes-specific integration is under 30 lines of glue: create the client, resolve `tenant_id` and bearer token, register one authorization middleware or hook, and surface `decision_id` plus `deny_source` in your error path. The rest of the sample files is ordinary framework startup and routing.
 
+## Safe reference integration path
+
+For a new consumer team, the lowest-risk sequence is:
+
+1. Generate a reviewable onboarding manifest with `npm run onboarding:seed -- ...` so tenant routing, Supabase issuer expectations, and starter permissions are written down before any control-plane mutation happens.
+2. Review and edit that manifest with the application team until the `identity_bridge_mapping`, permission names, and privileged-role expectations match the real app.
+3. Run `npm run onboarding:apply -- ... --dry-run` against the target engine first and resolve any manifest conflicts before removing `--dry-run`.
+4. Copy one of the sample entrypoints from [`./examples`](./examples) into the consuming app and keep the safe path intact: explicit `tenant_id`, raw bearer-token forwarding to `auth.resolveSession`, and engine-backed authorization checks on protected routes.
+5. Treat [`./test/example-flows.test.ts`](./test/example-flows.test.ts) as the executable reference for the expected session-then-authorization flow when adapting the sample to a real application.
+
+This keeps onboarding state reviewable, avoids implicit tenant inference, and makes the engine decision path the source of truth from the first integration pass.
+
 ## Onboarding seed artifact
 
 Use the checked-in template at [`./examples/onboarding-seed.template.json`](./examples/onboarding-seed.template.json) when a new application team needs a reviewable starting manifest for permissions, role definitions, and the required Supabase-project and tenant-routing decisions.
@@ -45,7 +57,7 @@ To generate a customized starter manifest from the command line:
 npm run onboarding:seed -- --tenant-id tenant_123 --application-id application_billing_123 --slug billing --display-name Billing
 ```
 
-Add `--supabase-project-ref`, `--supabase-jwt-issuer`, `--supabase-jwt-audience`, `--tenant-resolution-rule`, `--tenant-resolution-detail`, or `--tenant-membership-bootstrap` to override the default mapping placeholders. Add `--output ./examples/billing-onboarding-seed.json` to write the rendered manifest to disk instead of printing it to stdout.
+Add `--supabase-project-ref`, `--supabase-jwt-issuer`, `--supabase-jwt-audience`, `--tenant-resolution-rule`, `--tenant-resolution-detail`, or `--tenant-membership-bootstrap` to override the default mapping placeholders. `--tenant-resolution-rule` must be one of `route_segment`, `trusted_subdomain`, or `dedicated_internal_header`. Add `--output ./examples/billing-onboarding-seed.json` to write the rendered manifest to disk instead of printing it to stdout.
 
 To apply a reviewed manifest against a live engine control plane:
 
@@ -56,6 +68,8 @@ npm run onboarding:apply -- --base-url http://localhost:3000 --manifest ./exampl
 Remove `--dry-run` to create missing applications, permissions, role definitions, role-permission attachments, and to move seeded role definitions to the manifest's requested status. The apply flow is idempotent for existing applications, permissions, and role definitions, and it tolerates duplicate role-permission attachments by treating them as already present.
 
 The apply command validates immutable state before mutating anything. If an existing application slug, permission, or role definition conflicts with the reviewed manifest, the command fails with a deterministic manifest error instead of silently drifting control-plane state. The manifest's `identity_bridge_mapping` section is captured and returned as manual follow-up guidance; it is not yet persisted by the engine because tenant and upstream-project mapping remains outside the current control-plane contract.
+
+The recommended operator loop is seed -> review -> dry-run apply -> live apply -> copy the sample app wiring. That sequence is safer than starting from ad hoc route code because it forces tenant-routing and identity-bridge assumptions into a reviewed artifact before an application begins enforcing engine decisions.
 
 ## Usage
 

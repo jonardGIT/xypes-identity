@@ -8,6 +8,17 @@ import {
   type XypesIdentityRequestAuthorizationContextCarrier,
 } from "@xypes-identity/sdk";
 
+type FastifyInvoiceRequest = XypesIdentityRequestAuthorizationContextCarrier & {
+  headers: { authorization?: string };
+  params: { tenantId: string; invoiceId: string };
+  log: { error(error: unknown): void };
+};
+
+type FastifyReply = {
+  code(statusCode: number): FastifyReply;
+  send(payload: unknown): void;
+};
+
 declare module "fastify" {
   interface FastifyRequest extends XypesIdentityRequestAuthorizationContextCarrier {}
 }
@@ -20,67 +31,73 @@ const port = Number(process.env.PORT ?? "4000");
 
 app.get("/ready", async () => ({ status: "ok" }));
 
-app.setErrorHandler((error, request, reply) => {
-  if (isXypesIdentityAuthorizationDeniedError(error)) {
-    reply.code(403).send({
-      outcome: error.authorization.outcome,
-      decision_id: error.decisionId,
-      reason_code: error.reasonCode,
-      deny_source: error.authorization.deny_source ?? null,
+app.setErrorHandler(
+  (error: unknown, request: FastifyInvoiceRequest, reply: FastifyReply) => {
+    if (isXypesIdentityAuthorizationDeniedError(error)) {
+      reply.code(403).send({
+        outcome: error.authorization.outcome,
+        decision_id: error.decisionId,
+        reason_code: error.reasonCode,
+        deny_source: error.authorization.deny_source ?? null,
+      });
+      return;
+    }
+
+    if (isXypesIdentityApiError(error)) {
+      reply.code(error.statusCode).send({
+        code: error.code,
+        error: error.error,
+        message: error.message,
+      });
+      return;
+    }
+
+    request.log.error(error);
+    reply.code(500).send({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Unexpected sample app error.",
     });
-    return;
-  }
+  },
+);
 
-  if (isXypesIdentityApiError(error)) {
-    reply.code(error.statusCode).send({
-      code: error.code,
-      error: error.error,
-      message: error.message,
-    });
-    return;
-  }
-
-  request.log.error(error);
-  reply.code(500).send({
-    code: "INTERNAL_SERVER_ERROR",
-    message: "Unexpected sample app error.",
-  });
-});
-
-void app.register(async (tenantScopedApp) => {
-  tenantScopedApp.addHook(
-    "preHandler",
-    createFastifySessionHook({
-      client,
-      resolveTenantId: (request) =>
-        String((request.params as { tenantId?: string }).tenantId ?? ""),
-      resolveToken: (request) =>
-        request.headers.authorization?.replace(/^Bearer\s+/i, "") ?? "",
-    }),
-  );
-
-  tenantScopedApp.get<{
-    Params: { tenantId: string; invoiceId: string };
-  }>(
-    "/invoices/:invoiceId",
-    {
-      preHandler: createFastifyAuthorizationHook({
+void app.register(
+  async (tenantScopedApp: import("fastify").FastifyInstance) => {
+    tenantScopedApp.addHook(
+      "preHandler",
+      createFastifySessionHook<FastifyInvoiceRequest, FastifyReply>({
         client,
-        resolveApplicationId: () => "billing-app",
-        resolveAction: () => "invoices.read",
-        resolveResourceType: () => "invoice",
-        resolveResourceId: (request) =>
-          (request.params as { invoiceId: string }).invoiceId,
+        resolveTenantId: (request) => String(request.params.tenantId ?? ""),
+        resolveToken: (request) =>
+          request.headers.authorization?.replace(/^Bearer\s+/i, "") ?? "",
       }),
-    },
-    async (request) => ({
-      invoiceId: request.params.invoiceId,
-      tenant_id: request.xypesIdentity?.principal.tenant_id,
-      principal_id: request.xypesIdentity?.principal.principal_id,
-      decision_id: request.xypesIdentityAuthorization?.decision_id,
-    }),
-  );
-}, { prefix: "/tenants/:tenantId" });
+    );
+
+    tenantScopedApp.get<{
+      Params: { tenantId: string; invoiceId: string };
+    }>(
+      "/invoices/:invoiceId",
+      {
+        preHandler: createFastifyAuthorizationHook<
+          FastifyInvoiceRequest,
+          FastifyReply
+        >({
+          client,
+          resolveApplicationId: () => "billing-app",
+          resolveAction: () => "invoices.read",
+          resolveResourceType: () => "invoice",
+          resolveResourceId: (request) => request.params.invoiceId,
+        }),
+      },
+      async (request: FastifyInvoiceRequest) => ({
+        invoiceId: request.params.invoiceId,
+        tenant_id: request.xypesIdentity?.principal.tenant_id,
+        principal_id: request.xypesIdentity?.principal.principal_id,
+        decision_id: request.xypesIdentityAuthorization?.decision_id,
+      }),
+    );
+  },
+  { prefix: "/tenants/:tenantId" },
+);
 
 const start = async (): Promise<void> => {
   try {

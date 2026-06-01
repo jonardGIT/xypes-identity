@@ -17,7 +17,9 @@ class RecordingOperationalTelemetry implements OperationalTelemetryRecorder {
 
   async recordReplayBatch() {}
 
-  async recordIdentityReconciliation(input: IdentityReconciliationTelemetryInput) {
+  async recordIdentityReconciliation(
+    input: IdentityReconciliationTelemetryInput,
+  ) {
     this.reconciliationInputs.push(input);
   }
 
@@ -62,7 +64,9 @@ const buildDependencies = (
 test("runIdentityReconciliation returns a drift summary and records telemetry", async () => {
   const operationalTelemetry = new RecordingOperationalTelemetry();
 
-  const result = await runIdentityReconciliation(buildDependencies(operationalTelemetry));
+  const result = await runIdentityReconciliation(
+    buildDependencies(operationalTelemetry),
+  );
 
   assert.equal(result.generated_at, "2026-05-30T00:00:00.000Z");
   assert.equal(result.status, "drift_detected");

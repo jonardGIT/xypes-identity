@@ -209,7 +209,7 @@ export const renderAccessReviewConsole = () => `<!doctype html>
           <section class="panel">
             <div class="eyebrow">Review Query</div>
             <form id="review-form">
-              <label>Tenant Id<input id="tenant-id" value="tenant_123" required /></label>
+              <label>Tenant Id<input id="tenant-id" value="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1" required /></label>
               <div class="row">
                 <label>Stale After Days<input id="stale-after-days" type="number" min="1" value="30" required /></label>
                 <label>Limit<input id="limit" type="number" min="1" max="500" value="25" /></label>
@@ -254,7 +254,7 @@ export const renderAccessReviewConsole = () => `<!doctype html>
 
     <script>
       const state = {
-        latestTenantId: 'tenant_123',
+        latestTenantId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1',
         latestRoleBindingId: null,
         latestCandidates: [],
         selectedCandidate: null,

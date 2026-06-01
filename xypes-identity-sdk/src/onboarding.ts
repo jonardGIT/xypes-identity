@@ -7,7 +7,10 @@ import type {
   UpdateRoleDefinitionStatusResponse,
 } from "@xypes-identity/shared";
 
-import type { XypesIdentityClient, XypesIdentityRequestOptions } from "./client.js";
+import type {
+  XypesIdentityClient,
+  XypesIdentityRequestOptions,
+} from "./client.js";
 import { XypesIdentityApiError } from "./errors.js";
 
 export type XypesIdentityOnboardingControlPlaneClient = Pick<
@@ -123,8 +126,9 @@ const permissionKey = (input: {
   resource_type: string;
 }): string => `${input.action}::${input.resource_type}`;
 
-const normalizeNullableText = (value: string | null | undefined): string | null =>
-  value === undefined ? null : value;
+const normalizeNullableText = (
+  value: string | null | undefined,
+): string | null => (value === undefined ? null : value);
 
 const createManifestReason = (
   baseReason: string,
@@ -139,7 +143,10 @@ const resolvePermissionRef = (
 const validateManifest = (
   manifest: XypesIdentityOnboardingManifest,
 ): {
-  permissionRefs: Map<string, XypesIdentityOnboardingManifest["permissions"][number]>;
+  permissionRefs: Map<
+    string,
+    XypesIdentityOnboardingManifest["permissions"][number]
+  >;
 } => {
   const issues: string[] = [];
   const permissionRefs = new Map<
@@ -147,24 +154,46 @@ const validateManifest = (
     XypesIdentityOnboardingManifest["permissions"][number]
   >();
 
-  if (manifest.identity_bridge_mapping.supabase_project_ref.trim().length === 0) {
-    issues.push("identity_bridge_mapping.supabase_project_ref must be non-empty.");
+  if (
+    manifest.identity_bridge_mapping.supabase_project_ref.trim().length === 0
+  ) {
+    issues.push(
+      "identity_bridge_mapping.supabase_project_ref must be non-empty.",
+    );
   }
 
-  if (manifest.identity_bridge_mapping.expected_jwt_issuer.trim().length === 0) {
-    issues.push("identity_bridge_mapping.expected_jwt_issuer must be non-empty.");
+  if (
+    manifest.identity_bridge_mapping.expected_jwt_issuer.trim().length === 0
+  ) {
+    issues.push(
+      "identity_bridge_mapping.expected_jwt_issuer must be non-empty.",
+    );
   }
 
-  if (manifest.identity_bridge_mapping.expected_jwt_audience.trim().length === 0) {
-    issues.push("identity_bridge_mapping.expected_jwt_audience must be non-empty.");
+  if (
+    manifest.identity_bridge_mapping.expected_jwt_audience.trim().length === 0
+  ) {
+    issues.push(
+      "identity_bridge_mapping.expected_jwt_audience must be non-empty.",
+    );
   }
 
-  if (manifest.identity_bridge_mapping.tenant_resolution_detail.trim().length === 0) {
-    issues.push("identity_bridge_mapping.tenant_resolution_detail must be non-empty.");
+  if (
+    manifest.identity_bridge_mapping.tenant_resolution_detail.trim().length ===
+    0
+  ) {
+    issues.push(
+      "identity_bridge_mapping.tenant_resolution_detail must be non-empty.",
+    );
   }
 
-  if (manifest.identity_bridge_mapping.tenant_membership_bootstrap.trim().length === 0) {
-    issues.push("identity_bridge_mapping.tenant_membership_bootstrap must be non-empty.");
+  if (
+    manifest.identity_bridge_mapping.tenant_membership_bootstrap.trim()
+      .length === 0
+  ) {
+    issues.push(
+      "identity_bridge_mapping.tenant_membership_bootstrap must be non-empty.",
+    );
   }
 
   for (const permission of manifest.permissions) {
@@ -201,13 +230,14 @@ const validateManifest = (
 const buildIdentityBridgeManualSteps = (
   mapping: XypesIdentityIdentityBridgeMapping,
 ): string[] => {
-  const normalizeSentence = (value: string): string => value.trim().replace(/[.\s]+$/u, "");
+  const normalizeSentence = (value: string): string =>
+    value.trim().replace(/[.\s]+$/u, "");
 
   return [
-  `Confirm Supabase project '${mapping.supabase_project_ref}' is the issuer of the bearer tokens for this environment.`,
-  `Verify the engine is configured with issuer '${mapping.expected_jwt_issuer}' and audience '${mapping.expected_jwt_audience}' before enforcement begins.`,
-  `Implement and test tenant resolution via '${mapping.tenant_resolution_rule}': ${normalizeSentence(mapping.tenant_resolution_detail)}.`,
-  `Document how principals gain tenant membership: ${normalizeSentence(mapping.tenant_membership_bootstrap)}.`,
+    `Confirm Supabase project '${mapping.supabase_project_ref}' is the issuer of the bearer tokens for this environment.`,
+    `Verify the engine is configured with issuer '${mapping.expected_jwt_issuer}' and audience '${mapping.expected_jwt_audience}' before enforcement begins.`,
+    `Implement and test tenant resolution via '${mapping.tenant_resolution_rule}': ${normalizeSentence(mapping.tenant_resolution_detail)}.`,
+    `Document how principals gain tenant membership: ${normalizeSentence(mapping.tenant_membership_bootstrap)}.`,
   ];
 };
 
@@ -231,7 +261,9 @@ const assertPermissionCompatibility = (
   permission: PermissionState,
 ): string[] => {
   const issues: string[] = [];
-  const manifestDescription = normalizeNullableText(manifestPermission.description);
+  const manifestDescription = normalizeNullableText(
+    manifestPermission.description,
+  );
   const existingDescription = normalizeNullableText(permission.description);
 
   if (manifestDescription !== existingDescription) {
@@ -248,7 +280,9 @@ const assertRoleDefinitionCompatibility = (
   roleDefinition: RoleDefinitionState,
 ): string[] => {
   const issues: string[] = [];
-  const manifestDescription = normalizeNullableText(manifestRoleDefinition.description);
+  const manifestDescription = normalizeNullableText(
+    manifestRoleDefinition.description,
+  );
   const existingDescription = normalizeNullableText(roleDefinition.description);
 
   if (existingDescription !== manifestDescription) {
@@ -257,7 +291,10 @@ const assertRoleDefinitionCompatibility = (
     );
   }
 
-  if (roleDefinition.approval_required !== manifestRoleDefinition.approval_required) {
+  if (
+    roleDefinition.approval_required !==
+    manifestRoleDefinition.approval_required
+  ) {
     issues.push(
       `Existing role definition '${manifestRoleDefinition.name}' has approval_required=${roleDefinition.approval_required}, expected ${manifestRoleDefinition.approval_required}.`,
     );
@@ -282,7 +319,10 @@ const resolveApplication = async (
   const existingApplication = listed.applications[0] ?? null;
 
   if (existingApplication !== null) {
-    const issues = assertApplicationCompatibility(options.manifest, existingApplication);
+    const issues = assertApplicationCompatibility(
+      options.manifest,
+      existingApplication,
+    );
 
     if (issues.length > 0) {
       throw new XypesIdentityOnboardingManifestError(
@@ -294,7 +334,8 @@ const resolveApplication = async (
     return {
       action: "existing",
       application: existingApplication,
-      manifest_application_id: options.manifest.application.application_id ?? null,
+      manifest_application_id:
+        options.manifest.application.application_id ?? null,
     };
   }
 
@@ -302,7 +343,8 @@ const resolveApplication = async (
     return {
       action: "planned",
       application: null,
-      manifest_application_id: options.manifest.application.application_id ?? null,
+      manifest_application_id:
+        options.manifest.application.application_id ?? null,
     };
   }
 
@@ -325,7 +367,8 @@ const resolveApplication = async (
   return {
     action: "created",
     application: created.application,
-    manifest_application_id: options.manifest.application.application_id ?? null,
+    manifest_application_id:
+      options.manifest.application.application_id ?? null,
   };
 };
 
@@ -417,8 +460,8 @@ const createRolePermissionAttachment = async (
     };
   } catch (error) {
     if (
-      error instanceof XypesIdentityApiError
-      && error.code === "ROLE_PERMISSION_DUPLICATE"
+      error instanceof XypesIdentityApiError &&
+      error.code === "ROLE_PERMISSION_DUPLICATE"
     ) {
       return {
         action: "existing",
@@ -434,36 +477,46 @@ export const applyOnboardingManifest = async (
   options: ApplyOnboardingManifestOptions,
 ): Promise<ApplyOnboardingManifestResult> => {
   const { permissionRefs } = validateManifest(options.manifest);
-  const resolvedApplication = await resolveApplication(options.client.controlPlane, options);
+  const resolvedApplication = await resolveApplication(
+    options.client.controlPlane,
+    options,
+  );
 
   const warnings: string[] = [];
 
   if (
-    resolvedApplication.application !== null
-    && options.manifest.application.application_id !== undefined
-    && options.manifest.application.application_id !== resolvedApplication.application.application_id
+    resolvedApplication.application !== null &&
+    options.manifest.application.application_id !== undefined &&
+    options.manifest.application.application_id !==
+      resolvedApplication.application.application_id
   ) {
     warnings.push(
       `Manifest application_id '${options.manifest.application.application_id}' is a consumer-side reference and does not match the engine application_id '${resolvedApplication.application.application_id}'.`,
     );
   }
 
-  const applicationId = resolvedApplication.application?.application_id ?? "__planned_application__";
+  const applicationId =
+    resolvedApplication.application?.application_id ??
+    "__planned_application__";
 
-  const listedPermissions = resolvedApplication.application === null
-    ? []
-    : (
-      await options.client.controlPlane.listPermissions(
-        {
-          tenant_id: options.manifest.tenant_id,
-          application_id: applicationId,
-          limit: 500,
-        },
-        options.requestOptions,
-      )
-    ).permissions;
+  const listedPermissions =
+    resolvedApplication.application === null
+      ? []
+      : (
+          await options.client.controlPlane.listPermissions(
+            {
+              tenant_id: options.manifest.tenant_id,
+              application_id: applicationId,
+              limit: 500,
+            },
+            options.requestOptions,
+          )
+        ).permissions;
   const existingPermissionsByKey = new Map(
-    listedPermissions.map((permission) => [permissionKey(permission), permission]),
+    listedPermissions.map((permission) => [
+      permissionKey(permission),
+      permission,
+    ]),
   );
 
   const permissionResults: ApplyOnboardingManifestResult["permissions"] = [];
@@ -472,7 +525,9 @@ export const applyOnboardingManifest = async (
 
   for (const permission of options.manifest.permissions) {
     const ref = resolvePermissionRef(permission);
-    const existingPermission = existingPermissionsByKey.get(permissionKey(permission));
+    const existingPermission = existingPermissionsByKey.get(
+      permissionKey(permission),
+    );
 
     if (existingPermission !== undefined) {
       permissionCompatibilityIssues.push(
@@ -529,33 +584,43 @@ export const applyOnboardingManifest = async (
     );
   }
 
-  const listedRoleDefinitions = resolvedApplication.application === null
-    ? []
-    : (
-      await options.client.controlPlane.listRoleDefinitions(
-        {
-          tenant_id: options.manifest.tenant_id,
-          application_id: applicationId,
-          limit: 500,
-        },
-        options.requestOptions,
-      )
-    ).role_definitions;
+  const listedRoleDefinitions =
+    resolvedApplication.application === null
+      ? []
+      : (
+          await options.client.controlPlane.listRoleDefinitions(
+            {
+              tenant_id: options.manifest.tenant_id,
+              application_id: applicationId,
+              limit: 500,
+            },
+            options.requestOptions,
+          )
+        ).role_definitions;
   const existingRoleDefinitionsByName = new Map(
-    listedRoleDefinitions.map((roleDefinition) => [roleDefinition.name, roleDefinition]),
+    listedRoleDefinitions.map((roleDefinition) => [
+      roleDefinition.name,
+      roleDefinition,
+    ]),
   );
 
-  const roleDefinitionResults: ApplyOnboardingManifestResult["role_definitions"] = [];
+  const roleDefinitionResults: ApplyOnboardingManifestResult["role_definitions"] =
+    [];
   const resolvedRoleDefinitionsByName = new Map<string, RoleDefinitionState>();
   const roleCompatibilityIssues: string[] = [];
 
   for (const roleDefinition of options.manifest.role_definitions) {
     const desiredStatus = roleDefinition.status ?? "active";
-    const existingRoleDefinition = existingRoleDefinitionsByName.get(roleDefinition.name);
+    const existingRoleDefinition = existingRoleDefinitionsByName.get(
+      roleDefinition.name,
+    );
 
     if (existingRoleDefinition !== undefined) {
       roleCompatibilityIssues.push(
-        ...assertRoleDefinitionCompatibility(roleDefinition, existingRoleDefinition),
+        ...assertRoleDefinitionCompatibility(
+          roleDefinition,
+          existingRoleDefinition,
+        ),
       );
 
       const updated = await updateRoleDefinitionStatusIfNeeded(
@@ -565,7 +630,10 @@ export const applyOnboardingManifest = async (
         desiredStatus,
       );
 
-      resolvedRoleDefinitionsByName.set(roleDefinition.name, updated.roleDefinition);
+      resolvedRoleDefinitionsByName.set(
+        roleDefinition.name,
+        updated.roleDefinition,
+      );
       roleDefinitionResults.push({
         name: roleDefinition.name,
         action: "existing",
@@ -614,7 +682,10 @@ export const applyOnboardingManifest = async (
       desiredStatus,
     );
 
-    resolvedRoleDefinitionsByName.set(roleDefinition.name, updated.roleDefinition);
+    resolvedRoleDefinitionsByName.set(
+      roleDefinition.name,
+      updated.roleDefinition,
+    );
     roleDefinitionResults.push({
       name: roleDefinition.name,
       action: "created",
@@ -632,10 +703,13 @@ export const applyOnboardingManifest = async (
     );
   }
 
-  const rolePermissionResults: ApplyOnboardingManifestResult["role_permissions"] = [];
+  const rolePermissionResults: ApplyOnboardingManifestResult["role_permissions"] =
+    [];
 
   for (const roleDefinition of options.manifest.role_definitions) {
-    const resolvedRoleDefinition = resolvedRoleDefinitionsByName.get(roleDefinition.name);
+    const resolvedRoleDefinition = resolvedRoleDefinitionsByName.get(
+      roleDefinition.name,
+    );
 
     for (const permissionRef of roleDefinition.permission_refs) {
       const manifestPermission = permissionRefs.get(permissionRef);
@@ -647,9 +721,9 @@ export const applyOnboardingManifest = async (
       const resolvedPermission = resolvedPermissionsByRef.get(permissionRef);
 
       if (
-        resolvedRoleDefinition === undefined
-        || resolvedPermission === undefined
-        || options.dry_run === true
+        resolvedRoleDefinition === undefined ||
+        resolvedPermission === undefined ||
+        options.dry_run === true
       ) {
         rolePermissionResults.push({
           role_definition_name: roleDefinition.name,
@@ -681,7 +755,9 @@ export const applyOnboardingManifest = async (
     identity_bridge_mapping: {
       automation_status: "manual_capture_only",
       captured: options.manifest.identity_bridge_mapping,
-      manual_steps: buildIdentityBridgeManualSteps(options.manifest.identity_bridge_mapping),
+      manual_steps: buildIdentityBridgeManualSteps(
+        options.manifest.identity_bridge_mapping,
+      ),
     },
     application: resolvedApplication,
     permissions: permissionResults,

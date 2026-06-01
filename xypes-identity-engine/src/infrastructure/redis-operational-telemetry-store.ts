@@ -67,7 +67,8 @@ const createInitialState = (): MutableTelemetryState => ({
     reconciliation_anomalies_total: 0,
     last_webhook_at: null,
     last_reconciliation_at: null,
-    notes: "Webhook ingestion and reconciliation telemetry are reserved here, but the runtime path is not implemented in this repo yet.",
+    notes:
+      "Webhook ingestion and reconciliation telemetry are reserved here, but the runtime path is not implemented in this repo yet.",
   },
 });
 
@@ -79,22 +80,30 @@ const parseState = (value: string | null): MutableTelemetryState => {
   return JSON.parse(value) as MutableTelemetryState;
 };
 
-const updateAverage = (currentAverage: number, currentCount: number, durationMs: number): number => {
+const updateAverage = (
+  currentAverage: number,
+  currentCount: number,
+  durationMs: number,
+): number => {
   const nextCount = currentCount + 1;
 
-  return ((currentAverage * currentCount) + durationMs) / nextCount;
+  return (currentAverage * currentCount + durationMs) / nextCount;
 };
 
 export class RedisOperationalTelemetryStore implements OperationalTelemetryRecorder {
   constructor(private readonly redisClient: RedisClient) {}
 
-  private async mutate(mutateState: (state: MutableTelemetryState) => void): Promise<void> {
+  private async mutate(
+    mutateState: (state: MutableTelemetryState) => void,
+  ): Promise<void> {
     const current = parseState(await this.redisClient.get(telemetryKey));
     mutateState(current);
     await this.redisClient.set(telemetryKey, JSON.stringify(current));
   }
 
-  async recordResolveSession(input: ResolveSessionTelemetryInput): Promise<void> {
+  async recordResolveSession(
+    input: ResolveSessionTelemetryInput,
+  ): Promise<void> {
     await this.mutate((state) => {
       const snapshot = state.resolve_session;
 
@@ -117,11 +126,14 @@ export class RedisOperationalTelemetryStore implements OperationalTelemetryRecor
       snapshot.last_failed_at = input.occurred_at;
       snapshot.last_error_code = input.error_code ?? null;
 
-      if (input.error_code === "AUTH_INVALID_TOKEN" || input.error_code === "AUTH_TOKEN_EXPIRED") {
+      if (
+        input.error_code === "AUTH_INVALID_TOKEN" ||
+        input.error_code === "AUTH_TOKEN_EXPIRED"
+      ) {
         snapshot.token_failure_count += 1;
       } else if (
-        input.error_code === "AUTH_JWKS_UNAVAILABLE"
-        || input.error_code === "AUTH_TOKEN_VERIFICATION_UNAVAILABLE"
+        input.error_code === "AUTH_JWKS_UNAVAILABLE" ||
+        input.error_code === "AUTH_TOKEN_VERIFICATION_UNAVAILABLE"
       ) {
         snapshot.availability_failure_count += 1;
       } else if (input.error_code !== undefined) {
@@ -205,7 +217,9 @@ export class RedisOperationalTelemetryStore implements OperationalTelemetryRecor
     });
   }
 
-  async getSnapshot(generatedAt: string): Promise<OperationalTelemetrySnapshot> {
+  async getSnapshot(
+    generatedAt: string,
+  ): Promise<OperationalTelemetrySnapshot> {
     const state = parseState(await this.redisClient.get(telemetryKey));
 
     return {
@@ -213,13 +227,14 @@ export class RedisOperationalTelemetryStore implements OperationalTelemetryRecor
       ...state,
       rollout_diagnostics: {
         bridge_failure_visibility_ready:
-          state.resolve_session.token_failure_count > 0
-          || state.resolve_session.availability_failure_count > 0,
+          state.resolve_session.token_failure_count > 0 ||
+          state.resolve_session.availability_failure_count > 0,
         decision_latency_visibility_ready:
-          state.authorization.authorize_check_total > 0
-          || state.authorization.authorize_explain_total > 0,
+          state.authorization.authorize_check_total > 0 ||
+          state.authorization.authorize_explain_total > 0,
         replay_visibility_ready: state.replay.batches_processed_total > 0,
-        identity_lifecycle_visibility_ready: state.identity_lifecycle.status === "active",
+        identity_lifecycle_visibility_ready:
+          state.identity_lifecycle.status === "active",
       },
     };
   }

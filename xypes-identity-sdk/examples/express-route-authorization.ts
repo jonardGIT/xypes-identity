@@ -8,6 +8,18 @@ import {
   type XypesIdentityRequestAuthorizationContextCarrier,
 } from "@xypes-identity/sdk";
 
+type ExpressInvoiceRequest = XypesIdentityRequestAuthorizationContextCarrier & {
+  params: { tenantId: string; invoiceId: string };
+  header(name: string): string | undefined;
+};
+
+type ExpressResponse = {
+  json(body: unknown): ExpressResponse;
+  status(code: number): ExpressResponse;
+};
+
+type ExpressNext = (error?: unknown) => void;
+
 declare global {
   namespace Express {
     interface Request extends XypesIdentityRequestAuthorizationContextCarrier {}
@@ -22,13 +34,16 @@ const port = Number(process.env.PORT ?? "4000");
 
 app.use(express.json());
 
-app.get("/ready", (_request, response) => {
-  response.json({ status: "ok" });
-});
+app.get(
+  "/ready",
+  (_request: ExpressInvoiceRequest, response: ExpressResponse) => {
+    response.json({ status: "ok" });
+  },
+);
 
 app.use(
   "/tenants/:tenantId",
-  createExpressSessionMiddleware({
+  createExpressSessionMiddleware<ExpressInvoiceRequest, ExpressResponse>({
     client,
     resolveTenantId: (request) => String(request.params.tenantId ?? ""),
     resolveToken: (request) =>
@@ -38,14 +53,14 @@ app.use(
 
 app.get(
   "/tenants/:tenantId/invoices/:invoiceId",
-  createExpressAuthorizationMiddleware({
+  createExpressAuthorizationMiddleware<ExpressInvoiceRequest, ExpressResponse>({
     client,
     resolveApplicationId: () => "billing-app",
     resolveAction: () => "invoices.read",
     resolveResourceType: () => "invoice",
     resolveResourceId: (request) => request.params.invoiceId,
   }),
-  (request, response) => {
+  (request: ExpressInvoiceRequest, response: ExpressResponse) => {
     response.json({
       invoiceId: request.params.invoiceId,
       tenant_id: request.xypesIdentity?.principal.tenant_id,
@@ -55,7 +70,12 @@ app.get(
   },
 );
 
-app.use(((error, _request, response, _next) => {
+app.use(((
+  error: unknown,
+  _request: ExpressInvoiceRequest,
+  response: ExpressResponse,
+  _next: ExpressNext,
+) => {
   if (isXypesIdentityAuthorizationDeniedError(error)) {
     response.status(403).json({
       outcome: error.authorization.outcome,
@@ -79,7 +99,7 @@ app.use(((error, _request, response, _next) => {
     code: "INTERNAL_SERVER_ERROR",
     message: "Unexpected sample app error.",
   });
-}) as express.ErrorRequestHandler);
+}) as import("express").ErrorRequestHandler);
 
 app.listen(port, () => {
   console.log(

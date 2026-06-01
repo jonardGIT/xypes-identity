@@ -15,6 +15,17 @@ These files are meant to be copied as app entrypoint patterns, not read as isola
 - [`./express-route-authorization.ts`](./express-route-authorization.ts): Express entrypoint with tenant-scoped session middleware and a protected invoice route.
 - [`./fastify-route-authorization.ts`](./fastify-route-authorization.ts): Fastify entrypoint with the same flow using hooks.
 
+## Reference integration sequence
+
+Use these files as the runtime half of the onboarding path, not as the first step.
+
+1. Start with `npm run onboarding:seed -- ...` from the SDK root so the application's tenant-routing and identity-bridge assumptions are captured in a reviewable manifest.
+2. Review that manifest, then run `npm run onboarding:apply -- ... --dry-run` before any live control-plane mutation.
+3. Copy one sample entrypoint and replace only the app-local pieces such as route names, `application_id`, and resource identifiers.
+4. Keep the xypes-specific glue unchanged unless your app truly needs a different explicit tenant-resolution source.
+
+The safe path is: explicit tenant resolution, raw bearer-token forwarding to `auth.resolveSession`, engine-backed authorization for protected routes, and `decision_id` propagation in logs or deny responses.
+
 ## Under-30-lines of glue
 
 If your app already exists, the xypes-specific wiring stays small:

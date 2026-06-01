@@ -59,7 +59,8 @@ export interface AppDependencies {
   accessReviewRead?: ListAccessReviewFindingsDependencies;
   applicationCreate?: CreateApplicationDependencies;
   applicationRead?: ListApplicationsDependencies;
-  authorizationCheck?: AuthorizeCheckServiceDependencies & AuthorizeExplainServiceDependencies;
+  authorizationCheck?: AuthorizeCheckServiceDependencies &
+    AuthorizeExplainServiceDependencies;
   denyPolicyCreate?: CreateDenyPolicyDependencies;
   groupCreate?: CreateGroupDependencies;
   groupMembershipCreate?: CreateGroupMembershipDependencies;
@@ -88,7 +89,10 @@ export const buildApp = async (
     });
   }
 
-  if (dependencies.operationalTelemetry !== undefined && dependencies.clock !== undefined) {
+  if (
+    dependencies.operationalTelemetry !== undefined &&
+    dependencies.clock !== undefined
+  ) {
     await registerOperationsTelemetryRoute(app, {
       operationalTelemetry: dependencies.operationalTelemetry,
       clock: dependencies.clock,
@@ -96,15 +100,18 @@ export const buildApp = async (
   }
 
   if (dependencies.identityReconciliation !== undefined) {
-    await registerOperationsIdentityReconciliationRoute(app, dependencies.identityReconciliation);
+    await registerOperationsIdentityReconciliationRoute(
+      app,
+      dependencies.identityReconciliation,
+    );
   }
 
   if (
-    dependencies.principalRepository !== undefined
-    && dependencies.tokenVerifier !== undefined
-    && dependencies.auditPublisher !== undefined
-    && dependencies.decisionIdGenerator !== undefined
-    && dependencies.clock !== undefined
+    dependencies.principalRepository !== undefined &&
+    dependencies.tokenVerifier !== undefined &&
+    dependencies.auditPublisher !== undefined &&
+    dependencies.decisionIdGenerator !== undefined &&
+    dependencies.clock !== undefined
   ) {
     await registerResolveSessionRoute(app, {
       principalRepository: dependencies.principalRepository,
@@ -152,7 +159,10 @@ export const buildApp = async (
   }
 
   if (dependencies.groupMembershipCreate !== undefined) {
-    await registerCreateGroupMembershipRoute(app, dependencies.groupMembershipCreate);
+    await registerCreateGroupMembershipRoute(
+      app,
+      dependencies.groupMembershipCreate,
+    );
   }
 
   if (dependencies.permissionCreate !== undefined) {
@@ -168,23 +178,38 @@ export const buildApp = async (
   }
 
   if (dependencies.roleBindingStatusUpdate !== undefined) {
-    await registerUpdateRoleBindingStatusRoute(app, dependencies.roleBindingStatusUpdate);
+    await registerUpdateRoleBindingStatusRoute(
+      app,
+      dependencies.roleBindingStatusUpdate,
+    );
   }
 
   if (dependencies.roleDefinitionCreate !== undefined) {
-    await registerCreateRoleDefinitionRoute(app, dependencies.roleDefinitionCreate);
+    await registerCreateRoleDefinitionRoute(
+      app,
+      dependencies.roleDefinitionCreate,
+    );
   }
 
   if (dependencies.roleDefinitionRead !== undefined) {
-    await registerListRoleDefinitionsRoute(app, dependencies.roleDefinitionRead);
+    await registerListRoleDefinitionsRoute(
+      app,
+      dependencies.roleDefinitionRead,
+    );
   }
 
   if (dependencies.roleDefinitionStatusUpdate !== undefined) {
-    await registerUpdateRoleDefinitionStatusRoute(app, dependencies.roleDefinitionStatusUpdate);
+    await registerUpdateRoleDefinitionStatusRoute(
+      app,
+      dependencies.roleDefinitionStatusUpdate,
+    );
   }
 
   if (dependencies.rolePermissionAttach !== undefined) {
-    await registerAttachRolePermissionRoute(app, dependencies.rolePermissionAttach);
+    await registerAttachRolePermissionRoute(
+      app,
+      dependencies.rolePermissionAttach,
+    );
   }
 
   return app;

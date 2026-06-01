@@ -6,7 +6,11 @@ import { renderAccessReviewConsole } from "./render-access-review-console.js";
 test("renderAccessReviewConsole includes explicit approval selection and audit visibility affordances", () => {
   const html = renderAccessReviewConsole();
 
-  assert.match(html, /Select a candidate from the workbench before activating privileged access\./);
+  assert.match(html, /value="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"/);
+  assert.match(
+    html,
+    /Select a candidate from the workbench before activating privileged access\./,
+  );
   assert.match(html, /data-candidate-id=/);
   assert.match(html, /Activate selected binding/);
   assert.match(html, /activation-confirmation/);

@@ -101,7 +101,7 @@ For the full local stack, start it from the workspace root:
 docker compose up --build
 ```
 
-If the Postgres volume already exists, run `docker compose down -v` first so the init SQL and local resolve-session seed run again.
+If the Postgres volume already exists, run `docker compose down -v` first so the init SQL and local resolve-session seed run again. The same workspace-root compose file also starts Redis, which the engine now requires for cache reads and tenant version invalidation. For host-run workflows that reuse these support containers, the compose file publishes Postgres on `55432` and Redis on `56379` by default to avoid common workstation port conflicts.
 
 ## Resolve-session local walkthrough
 
@@ -175,7 +175,7 @@ curl -i http://localhost:3000/v1/auth/resolve-session \
 
 Expected result: `403` with code `AUTH_TENANT_MEMBERSHIP_SUSPENDED`.
 
-The token helper lives under `docker/jwks-mock/`, reads the local-only private JWK there, and prints a signed JWT to stdout.
+The token helper lives under `docker/jwks-mock/`, reads the local-only private JWK there, and prints a signed JWT to stdout. The helper uses Node's native JWK import path so it remains compatible with current Node 22 container images.
 
 ## Resolve-session outage behavior
 

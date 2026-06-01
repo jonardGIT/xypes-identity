@@ -13,7 +13,8 @@ export const runIdentityReconciliation = async (
   dependencies: RunIdentityReconciliationDependencies,
 ): Promise<IdentityReconciliationResponse> => {
   const generatedAt = dependencies.clock.now().toISOString();
-  const snapshot = await dependencies.identityReconciliationRepository.scanIdentityReconciliation();
+  const snapshot =
+    await dependencies.identityReconciliationRepository.scanIdentityReconciliation();
   const anomalyCount = snapshot.anomalies.length;
 
   await dependencies.operationalTelemetry?.recordIdentityReconciliation({
@@ -32,8 +33,14 @@ export const runIdentityReconciliation = async (
       principals_scanned: snapshot.principals_scanned,
       tenant_memberships_scanned: snapshot.tenant_memberships_scanned,
       anomalies_detected: anomalyCount,
-      orphaned_principals: countAnomalies(snapshot.anomalies, "ORPHANED_PRINCIPAL"),
-      duplicate_subject_mappings: countAnomalies(snapshot.anomalies, "DUPLICATE_SUBJECT_MAPPING"),
+      orphaned_principals: countAnomalies(
+        snapshot.anomalies,
+        "ORPHANED_PRINCIPAL",
+      ),
+      duplicate_subject_mappings: countAnomalies(
+        snapshot.anomalies,
+        "DUPLICATE_SUBJECT_MAPPING",
+      ),
       suspended_principal_active_memberships: countAnomalies(
         snapshot.anomalies,
         "SUSPENDED_PRINCIPAL_ACTIVE_MEMBERSHIP",

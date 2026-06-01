@@ -64,17 +64,18 @@ The workspace root now includes Linux and PowerShell automation under `scripts/l
 - Per-repo verify scripts install dependencies automatically, use `npm ci` only when a `package-lock.json` exists, and then run each repo's build and verification commands. Use `bash scripts/linux/verify-shared.sh`, `bash scripts/linux/verify-engine.sh`, `bash scripts/linux/verify-sdk.sh`, `bash scripts/linux/verify-admin.sh`, or `pwsh -File scripts/windows/verify-shared.ps1`, `verify-engine.ps1`, `verify-sdk.ps1`, `verify-admin.ps1`.
 - Cross-repo verification runs the repos in dependency order with `bash scripts/linux/verify-all.sh` or `pwsh -File scripts/windows/verify-all.ps1`.
 - Local Docker startup scripts use the workspace-root `docker-compose.yml`, optionally reset volumes first, and smoke-test the engine and admin stack. Use `bash scripts/linux/start-local-stack.sh --fresh all` or `pwsh -File scripts/windows/start-local-stack.ps1 -Fresh -Services all`. You can also target `engine` or `admin`.
+- Dynamic orchestration prompt helpers can now generate a reusable parallel-work bundle by default for any platform root. Use `bash scripts/linux/render-platform-parallel-prompt.sh --root /home/nhad/saas/xypes-identity --sessions 3` to emit a bundle directory, `bash scripts/linux/render-platform-parallel-prompt.sh --no-auto` to print only the manager prompt, or `bash scripts/linux/render-platform-parallel-prompt.sh --execute --goal 'your bounded objective here'` to execute the manager and worker packets through Copilot CLI. The PowerShell variant still renders prompts with `pwsh -File scripts/windows/render-platform-parallel-prompt.ps1 -Root /home/nhad/saas/xypes-docman -Sessions 3`.
 - Offline transfer helpers support the two-machine bundle workflow documented in [docs/OFFLINE_DUAL_MACHINE_WORKFLOW.md](docs/OFFLINE_DUAL_MACHINE_WORKFLOW.md). Use the `export-main-bundle`, `import-main-bundle`, `export-branch-bundle`, `import-branch-bundle`, and `lock-offline-work-machine` scripts under `scripts/linux/` or `scripts/windows/`.
 
 ## Docker local testing
 
-For a minimal local stack, start Postgres, a static JWKS mock, the engine, and the current admin scaffold from the workspace root:
+For a minimal local stack, start Postgres, Redis, a static JWKS mock, the engine, and the current admin scaffold from the workspace root:
 
 ```bash
 docker compose up --build
 ```
 
-The compose file mounts `xypes-identity-engine/sql` into Postgres initialization, adds a local-only resolve-session seed file, builds the engine image with the workspace root as context so `file:../shared` resolves, builds the admin image from `xypes-identity-admin/Dockerfile` with the same root context so the local `shared -> sdk -> admin` dependency chain resolves during image build, and serves `docker/jwks-mock/jwks.json` through a tiny static container.
+The compose file mounts `xypes-identity-engine/sql` into Postgres initialization, adds a local-only resolve-session seed file, starts a local Redis instance for engine cache and tenant-version state, builds the engine image with the workspace root as context so `file:../shared` resolves, builds the admin image from `xypes-identity-admin/Dockerfile` with the same root context so the local `shared -> sdk -> admin` dependency chain resolves during image build, and serves `docker/jwks-mock/jwks.json` through a tiny static container. To reduce collisions with already-running local services, Postgres is published on host port `55432` by default and Redis on host port `56379`, while containers still use `5432` and `6379` internally.
 
 If you have already initialized the Postgres volume once, run `docker compose down -v` before bringing the stack back up so the seed SQL runs again.
 
@@ -89,7 +90,7 @@ docker compose --profile tools run --rm \
 	token-mint
 ```
 
-The local seed data supports these three `POST /v1/auth/resolve-session` exercises:
+The local seed data supports these three `POST /v1/auth/resolve-session` exercises, and the startup scripts now smoke-test the admin access review console against the seeded tenant id `aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1` as part of the same boot path:
 
 1. Success: subject `local-active-member` with tenant `aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1`
 2. Missing membership: subject `local-active-member` with tenant `bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2`
